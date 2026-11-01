@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GRO-L03 — Evidence-First Operations</title>
+<style>
+  :root {
+    --bg: #191817;
+    --fg: #f2efe9;
+    --sub: #a39e92;
+    --line: #33302b;
+    --panel: #201e1b;
+    --accent: #cc785c;
+    --accent-dim: #8a5440;
+    --accent-soft: rgba(204, 120, 92, .14);
+    --cream: #e8e2d4;
+    --good: #9caf88;
+    --bad: #c9644f;
+    --radius: 22px;
+    --ease: cubic-bezier(.16, 1, .3, 1);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, textarea { font: inherit; }
+  button { min-height: 44px; cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: var(--accent); }
+  ::selection { background: var(--accent); color: #1a1512; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  #reading-progress {
+    position: fixed; z-index: 1000; top: 0; left: 0; width: 0; height: 2px;
+    background: var(--accent); box-shadow: 0 0 14px rgba(204, 120, 92, .7);
+  }
+
+  .site-nav {
+    position: fixed; z-index: 900; top: 0; right: 0; left: 0;
+    border-bottom: 1px solid rgba(242, 239, 233, .1);
+    background: rgba(25, 24, 23, .66);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+  }
+  .site-nav nav { display: flex; width: min(1240px, 100%); min-height: 58px; margin: 0 auto; padding: 0 28px; align-items: center; justify-content: space-between; gap: 24px; }
+  .brand { flex: 0 0 auto; font-size: 14px; font-weight: 800; letter-spacing: .02em; }
+  .nav-links { display: flex; min-width: 0; gap: 18px; color: var(--sub); font-size: 12px; overflow-x: auto; }
+  .brand, .nav-links a { display: inline-flex; min-height: 44px; align-items: center; }
+  .nav-links a { position: relative; white-space: nowrap; }
+  .nav-links a::after {
+    position: absolute; right: 0; bottom: -7px; left: 0; height: 1px; content: "";
+    background: var(--accent); transform: scaleX(0); transition: transform .25s var(--ease);
+  }
+  .nav-links a:hover::after, .nav-links a[aria-current="location"]::after { transform: scaleX(1); }
+  .nav-links a[aria-current="location"] { color: var(--fg); }
+
+  .cursor-light {
+    position: fixed; z-index: 850; top: 0; left: 0; width: 460px; height: 460px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(204, 120, 92, .32) 0%, rgba(232, 226, 212, .08) 42%, transparent 70%);
+    filter: blur(10px); mix-blend-mode: screen; pointer-events: none;
+    transform: translate3d(-50%, -50%, 0); will-change: transform;
+  }
+
+  .js-enhanced .reveal { opacity: 0; transform: translate3d(0, 24px, 0); }
+  .js-enhanced .reveal.in { opacity: 1; transform: translate3d(0, 0, 0); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+
+  main > section { position: relative; min-height: 60vh; padding: 148px max(7vw, 28px) 120px; border-bottom: 1px solid var(--line); }
+  main > section:nth-child(even) { background: var(--panel); }
+  .section-inner { position: relative; z-index: 2; width: min(1160px, 100%); min-width: 0; margin: 0 auto; }
+  .section-inner > * { min-width: 0; }
+
+  .eyebrow { margin: 0 0 14px; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+  h1, h2, h3, p { margin-top: 0; }
+  h1 { max-width: 980px; margin-bottom: 22px; font-size: clamp(38px, 6.4vw, 78px); line-height: 1.04; }
+  h2 { max-width: 860px; margin-bottom: 20px; font-size: clamp(29px, 4.2vw, 50px); line-height: 1.1; }
+  h3 { margin-bottom: 10px; font-size: clamp(18px, 2vw, 23px); line-height: 1.25; }
+  .lead { max-width: 760px; color: var(--sub); font-size: clamp(16px, 1.4vw, 20px); }
+  .prose { max-width: 780px; }
+  .prose p { margin: 16px 0 0; color: var(--sub); }
+  .prose strong, .signal { color: var(--fg); }
+  .signal { text-decoration-color: var(--accent); text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+  .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  blockquote {
+    max-width: 900px; margin: 38px 0; padding: 2px 0 2px 22px; border-left: 3px solid var(--accent);
+    font-size: clamp(20px, 2.3vw, 30px); font-weight: 750; line-height: 1.32;
+  }
+
+  .next-peek {
+    position: relative; z-index: 4; display: flex; width: min(1160px, calc(100% - max(14vw, 56px)));
+    min-height: 50px; margin: 48px auto -50px; padding: 0 18px; border: 1px solid var(--line);
+    background: rgba(16, 15, 14, .92); align-items: center; justify-content: space-between; gap: 18px;
+    color: var(--sub); font-size: 12px; font-weight: 750; text-transform: uppercase;
+  }
+  .next-peek strong { color: var(--fg); font-size: 13px; }
+
+  /* Flip cards (verbs + review matrix) */
+  .contract-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-top: 46px; background: var(--line); perspective: 1200px; }
+  .contract-card { min-height: 200px; background: transparent; border: 0; padding: 0; color: var(--fg); }
+  .contract-inner { position: relative; min-height: 200px; width: 100%; transition: transform .6s var(--ease); transform-style: preserve-3d; }
+  .contract-card[aria-pressed="true"] .contract-inner { transform: rotateY(180deg); }
+  .contract-face {
+    position: absolute; inset: 0; backface-visibility: hidden; padding: 20px; background: var(--bg); color: var(--fg);
+    display: flex; flex-direction: column; gap: 8px; text-align: left;
+  }
+  main > section:nth-child(even) .contract-face { background: #16140f; }
+  .contract-face strong { color: var(--fg); }
+  .contract-face .idx { color: var(--accent); font-size: 11px; font-weight: 800; }
+  .contract-face p { margin: 0; color: var(--sub); font-size: 13px; }
+  .contract-back { transform: rotateY(180deg); background: var(--accent-soft) !important; }
+  .contract-back strong { color: var(--fg); font-size: 13px; }
+  .contract-back .evi { margin-top: 8px; color: var(--accent); font-size: 12px; font-weight: 700; }
+  .contract-back .cannot { margin-top: 6px; color: var(--bad); font-size: 12px; font-weight: 700; }
+
+  /* Ladder (vertical accordion) */
+  .ladder-list { display: grid; gap: 1px; margin-top: 46px; background: var(--line); }
+  .ladder-rung { display: grid; grid-template-columns: 56px minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 18px 20px; background: var(--bg); border: 0; width: 100%; text-align: left; color: var(--fg); }
+  main > section:nth-child(even) .ladder-rung { background: #16140f; }
+  .ladder-rung .num { color: var(--accent); font-size: 22px; font-weight: 850; }
+  .ladder-rung .claim { font-size: 15px; font-weight: 700; }
+  .ladder-rung .chevron { color: var(--sub); font-size: 13px; transition: transform .25s var(--ease); }
+  .ladder-rung[aria-expanded="true"] .chevron { transform: rotate(90deg); color: var(--accent); }
+  .ladder-rung[aria-expanded="true"] { box-shadow: inset 3px 0 0 var(--accent); background: var(--accent-soft); }
+  .ladder-panel { display: none; padding: 0 20px 22px 94px; background: var(--bg); color: var(--sub); font-size: 14px; }
+  main > section:nth-child(even) .ladder-panel { background: #16140f; }
+  .ladder-panel.is-open { display: block; }
+  .ladder-panel .avoid { display: block; margin-top: 10px; padding: 12px 14px; border-left: 2px solid var(--bad); background: rgba(201,100,79,.08); color: var(--fg); font-size: 13px; }
+
+  /* Lab shell / worksheet / loop strip */
+  .lab-shell { display: grid; width: min(1080px, 100%); margin-top: 48px; padding: 32px; border: 1px solid var(--accent-dim); border-radius: var(--radius); background: linear-gradient(145deg, #1f1c18, #130f0d 72%); box-shadow: 0 30px 80px rgba(0,0,0,.45); gap: 22px; }
+  .lab-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .lab-heading p { max-width: 620px; margin: 0; color: var(--sub); }
+  .loop-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+  .loop-strip span { padding: 8px 12px; border: 1px solid var(--line); background: #0f0d0b; color: var(--sub); font-size: 12px; font-weight: 700; }
+  .loop-strip span.is-active { border-color: var(--accent); color: var(--fg); background: var(--accent-soft); }
+  .question-queue { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .question-queue li { padding: 14px 16px; border: 1px solid var(--line); background: #0f0d0b; color: var(--sub); display: none; }
+  .question-queue li.is-shown { display: block; color: var(--fg); }
+  .question-queue li strong { color: var(--accent); display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; }
+  .lab-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .lab-controls button { padding: 10px 17px; border: 1px solid var(--line); border-radius: 999px; background: #211e1a; color: var(--fg); font-weight: 700; }
+  .lab-controls button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .lab-controls button:disabled { cursor: not-allowed; opacity: .45; }
+  .lab-status { min-height: 58px; margin: 0; padding: 16px 18px; border-left: 2px solid var(--accent); background: #0f0d0b; color: var(--sub); }
+  .lab-status strong { color: var(--fg); }
+
+  /* Reference core / controls (safe-action checklist) */
+  .control-stage { display: grid; grid-template-columns: minmax(0, .9fr) minmax(280px, 1.1fr); gap: 42px; margin-top: 50px; align-items: center; }
+  .control-list { display: grid; gap: 12px; }
+  .control-list button {
+    padding: 15px 18px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); text-align: left;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .control-list button span { color: var(--sub); font-size: 13px; }
+  .control-list button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .control-core {
+    position: relative; display: grid; width: min(100%, 440px); min-height: 340px; margin: 0 auto; padding: 42px;
+    border: 1px solid var(--accent-dim); border-radius: 50%;
+    background: radial-gradient(circle, rgba(204,120,92,.14), #100f0d 68%);
+    place-content: center; text-align: center; box-shadow: 0 0 90px rgba(204,120,92,.1);
+  }
+  .control-core::before, .control-core::after { position: absolute; border: 1px solid var(--line); border-radius: 50%; content: ""; }
+  .control-core::before { inset: 22px; }
+  .control-core::after { inset: 54px; border-style: dashed; }
+  .control-core > * { position: relative; z-index: 1; }
+  .control-tags { display: flex; flex-wrap: wrap; margin: 18px 0 0; padding: 0; justify-content: center; gap: 8px; list-style: none; }
+  .control-tags li { padding: 5px 9px; border: 1px solid var(--line); color: var(--sub); font-size: 12px; }
+  .control-tags li.is-on { border-color: var(--accent); color: var(--fg); }
+  .control-metrics { display: flex; flex-wrap: wrap; margin-top: 46px; gap: 1px; background: var(--line); }
+  .control-metrics div { flex: 1 1 200px; padding: 18px; background: var(--panel); }
+  .control-metrics output { display: block; color: var(--fg); font-size: 26px; font-weight: 850; }
+  .control-metrics span { color: var(--sub); font-size: 12px; text-transform: uppercase; }
+
+  /* Worksheet */
+  .worksheet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .worksheet-field { display: grid; gap: 6px; }
+  .worksheet-field label { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); }
+  .worksheet-field input { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px; background: #0f0d0b; color: var(--fg); }
+
+  /* Evidence board (exit assessment) */
+  .evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-top: 44px; background: var(--line); }
+  .evidence-card {
+    min-height: 168px; padding: 24px; background: var(--bg); text-align: left; color: var(--fg);
+    display: flex; flex-direction: column; gap: 10px; border: 0; width: 100%;
+  }
+  main > section:nth-child(even) .evidence-card { background: #16140f; }
+  .evidence-card .tag { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+  .evidence-card p { margin: 0; color: var(--sub); font-size: 14px; }
+  .evidence-card[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+  .evidence-card .reveal-note { display: none; margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--fg); font-size: 13px; }
+  .evidence-card[aria-pressed="true"] .reveal-note { display: block; }
+  .evidence-status { margin-top: 28px; }
+
+  /* Takeaway list */
+  .takeaway-list { display: grid; gap: 1px; margin-top: 40px; background: var(--line); grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .takeaway-list li { list-style: none; min-height: 90px; padding: 20px 22px; background: var(--bg); color: var(--sub); font-size: 15px; }
+  main > section:nth-child(even) .takeaway-list li { background: #16140f; }
+  .takeaway-list li strong { color: var(--fg); }
+
+  .ledger-wrap { min-width: 0; margin-top: 50px; }
+  table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
+  th, td { padding: 16px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--accent); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  td { color: var(--sub); }
+  td:last-child { color: var(--fg); font-weight: 700; }
+  .sources { margin-top: 56px; padding-top: 34px; border-top: 1px solid var(--line); }
+  .sources ul { display: grid; gap: 12px; padding: 0; list-style: none; }
+  .sources a { color: var(--sub); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+
+  footer { padding: 40px max(7vw, 28px) 70px; color: var(--sub); font-size: 13px; }
+  .footer-inner { display: flex; width: min(1160px, 100%); margin: 0 auto; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
+  .lesson-pager { display: flex; width: min(1160px, 100%); margin: 20px auto 0; gap: 14px; flex-wrap: wrap; }
+  .lesson-pager a, .lesson-pager span.pager-next, .lesson-pager span:first-child {
+    flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; padding: 16px 20px;
+    border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--fg);
+    transition: border-color .25s var(--ease), background .25s var(--ease);
+  }
+  .lesson-pager a:hover { border-color: var(--accent); background: #241f1a; }
+  .pager-dir { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+  .pager-title { font-size: 14px; font-weight: 700; }
+  .lesson-pager .pager-next { text-align: right; align-items: flex-end; }
+  .lesson-pager .is-disabled { opacity: .4; pointer-events: none; }
+  @media (max-width: 620px) {
+    .lesson-pager a, .lesson-pager span.pager-next, .lesson-pager span:first-child { flex: 1 1 100%; }
+    .lesson-pager .pager-next { text-align: left; align-items: flex-start; }
+  }
+
+  @media (max-width: 1040px) {
+    .nav-links { max-width: 70vw; }
+    .control-stage { grid-template-columns: minmax(0,1fr); }
+    .evidence-grid { grid-template-columns: minmax(0,1fr); }
+    .contract-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .worksheet-grid { grid-template-columns: minmax(0,1fr); }
+  }
+  @media (max-width: 760px) {
+    main > section { padding: 140px 22px 92px; }
+    .evidence-grid, .contract-grid, .takeaway-list { grid-template-columns: minmax(0,1fr); }
+    .next-peek { width: calc(100% - 44px); margin: 40px auto -40px; }
+    .ladder-rung { grid-template-columns: 36px minmax(0,1fr) auto; }
+    .ladder-panel { padding-left: 20px; }
+    table, thead, tbody, tr, th, td { display: block; }
+    table { min-width: 0; }
+    thead { display: none; }
+    tr { padding: 14px 0; border-bottom: 1px solid var(--line); }
+    td { display: grid; grid-template-columns: minmax(0,.7fr) minmax(0,1.3fr); gap: 12px; padding: 6px 0; border: 0; }
+    td::before { color: var(--accent); content: attr(data-label); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+  }
+  @media (pointer: coarse) { button, a { cursor: default; } .cursor-light { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    .js-enhanced .reveal { opacity: 1; transform: none; }
+    .cursor-light { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div id="reading-progress" aria-hidden="true"></div>
+  <header class="site-nav">
+    <nav aria-label="Lesson sections">
+      <a class="brand" href="#mystery">GRO·L03</a>
+      <div class="nav-links">
+        <a href="#mystery">Mystery</a>
+        <a href="#verbs">Verbs</a>
+        <a href="#ladder">State Ladder</a>
+        <a href="#loop">Diagnostic Loop</a>
+        <a href="#safe-action">Safe Action</a>
+        <a href="#review">AI Review</a>
+        <a href="#template">Incident Note</a>
+        <a href="#exit">Exit Check</a>
+        <a href="#takeaways">Takeaways</a>
+        <a href="#sources">Sources</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="investigation" tabindex="-1">
+
+    <section id="mystery">
+      <div class="section-inner">
+        <p class="eyebrow">GRO-L03 · Evidence-First Operations</p>
+        <h1>"Something is broken."<br>That is not yet a <span class="signal">root cause.</span></h1>
+        <p class="lead">An incident investigation becomes unreliable the moment a guess silently turns into a "fact." This lesson gives every step in between a name, so uncertainty stays visible instead of being quietly erased.</p>
+        <blockquote>How do we move from "something is broken" to a justified repair — without guessing, causing avoidable disruption, or declaring success too early?</blockquote>
+        <p class="prose">Not every failure needs a formal postmortem. The same discipline scales from a local lab to a production incident: make uncertainty visible, and don't invent certainty after the fact.</p>
+      </div>
+      <a class="next-peek" href="#verbs"><span>Next</span><strong>Eight verbs people quietly collapse into one ↓</strong></a>
+    </section>
+
+    <section id="verbs">
+      <div class="section-inner">
+        <p class="eyebrow">Observe, Infer, and Assume Are Different Verbs</p>
+        <h2>Eight words, eight different claims.</h2>
+        <p class="lead">Click a card to flip it and see the worked example for each term.</p>
+        <div id="verb-grid" class="contract-grid" role="group" aria-label="Eight investigation verbs, click to flip">
+          <button class="contract-card" type="button" aria-pressed="false" data-verb="0"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">01</span><strong>Observation</strong><p>A directly recorded signal with time and scope.</p></div>
+            <div class="contract-face contract-back"><strong>"At 10:14:07 the browser request to http://127.0.0.1:8000/api/status failed with a connection error."</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-verb="1"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">02</span><strong>Inference</strong><p>A conclusion supported by one or more observations.</p></div>
+            <div class="contract-face contract-back"><strong>"The failure appears to be before a valid HTTP response was received."</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-verb="2"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">03</span><strong>Hypothesis</strong><p>A testable explanation.</p></div>
+            <div class="contract-face contract-back"><strong>"The API is not listening on port 8000."</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-verb="3"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">04</span><strong>Test</strong><p>An action chosen to distinguish hypotheses.</p></div>
+            <div class="contract-face contract-back"><strong>curl -i http://127.0.0.1:8000/api/status, while checking the process terminal.</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-verb="4"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">05</span><strong>Root cause</strong><p>The causal condition the evidence demonstrates — in the investigated scope.</p></div>
+            <div class="contract-face contract-back"><strong>Caution:</strong> one failed setting is not always the full organizational root cause.</div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-verb="5"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">06</span><strong>Fix</strong><p>The change that removes or mitigates the demonstrated cause.</p></div>
+            <div class="contract-face contract-back"><strong>Scoped to exactly what the evidence demonstrated — not a guess at a broader problem.</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-verb="6"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">07</span><strong>Verification</strong><p>Evidence the expected behavior is restored, with no known regression.</p></div>
+            <div class="contract-face contract-back"><strong>Re-run the exact check that originally failed, plus a check for anything the fix could have broken.</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-verb="7"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">08</span><strong>Prevention</strong><p>A change that reduces recurrence or impact.</p></div>
+            <div class="contract-face contract-back"><strong>A test, config validator, monitor, or documented ownership change — never just "be more careful."</strong></div>
+          </div></button>
+        </div>
+        <p id="verb-status" class="lab-status" role="status" aria-live="polite" style="margin-top:28px;"><strong>0 of 8 reviewed.</strong> Flip every card — these words are not interchangeable.</p>
+      </div>
+      <a class="next-peek" href="#ladder"><span>Next</span><strong>The system-state ladder ↓</strong></a>
+    </section>
+
+    <section id="ladder">
+      <div class="section-inner">
+        <p class="eyebrow">The System-State Ladder</p>
+        <h2>Evidence at one rung does not prove the rung above it.</h2>
+        <p class="lead">Click a rung to expand its evidence and the false conclusion it tempts people into.</p>
+        <div id="ladder-list" class="ladder-list" role="group" aria-label="Seven-rung system-state ladder">
+          <div><button class="ladder-rung" type="button" data-rung="0" aria-expanded="false"><span class="num">1</span><span class="claim">Artifact present — required code/config exists</span><span class="chevron">▸</span></button>
+            <div class="ladder-panel" data-panel="0"><strong>Evidence:</strong> file diff, commit, artifact registry metadata.<span class="avoid">False conclusion to avoid: "The file exists, so it works."</span></div></div>
+          <div><button class="ladder-rung" type="button" data-rung="1" aria-expanded="false"><span class="num">2</span><span class="claim">Process started — the runtime process is alive</span><span class="chevron">▸</span></button>
+            <div class="ladder-panel" data-panel="1"><strong>Evidence:</strong> process output, process table, container status.<span class="avoid">False conclusion to avoid: "The process runs, so the route is reachable."</span></div></div>
+          <div><button class="ladder-rung" type="button" data-rung="2" aria-expanded="false"><span class="num">3</span><span class="claim">Listener reachable — a caller can connect to host/port</span><span class="chevron">▸</span></button>
+            <div class="ladder-panel" data-panel="2"><strong>Evidence:</strong> TCP connection, direct HTTP check.<span class="avoid">False conclusion to avoid: "The port is open, so correct behavior is served."</span></div></div>
+          <div><button class="ladder-rung" type="button" data-rung="3" aria-expanded="false"><span class="num">4</span><span class="claim">Route responds — requested method/path returns a response</span><span class="chevron">▸</span></button>
+            <div class="ladder-panel" data-panel="3"><strong>Evidence:</strong> curl -i, API test, response body.<span class="avoid">False conclusion to avoid: "The route returns 200, so every response is semantically correct."</span></div></div>
+          <div><button class="ladder-rung" type="button" data-rung="4" aria-expanded="false"><span class="num">5</span><span class="claim">Contract holds — response matches documented expectations</span><span class="chevron">▸</span></button>
+            <div class="ladder-panel" data-panel="4"><strong>Evidence:</strong> tests for status, schema, validation, error cases.<span class="avoid">False conclusion to avoid: "The API contract holds, so the browser can read it."</span></div></div>
+          <div><button class="ladder-rung" type="button" data-rung="5" aria-expanded="false"><span class="num">6</span><span class="claim">End-to-end path works — the real client can complete the path</span><span class="chevron">▸</span></button>
+            <div class="ladder-panel" data-panel="5"><strong>Evidence:</strong> browser Network record + rendered UI state.<span class="avoid">False conclusion to avoid: "The UI works once, so capacity and reliability are adequate."</span></div></div>
+          <div><button class="ladder-rung" type="button" data-rung="6" aria-expanded="false"><span class="num">7</span><span class="claim">User outcome holds under required conditions</span><span class="chevron">▸</span></button>
+            <div class="ladder-panel" data-panel="6"><strong>Evidence:</strong> acceptance test and product-level evidence.<span class="avoid">False conclusion to avoid: "One happy-path test proves production readiness."</span></div></div>
+        </div>
+        <p class="prose">This ladder is a teaching model, not a formal standard. A real production-readiness claim may need additional rungs for authentication, persistence, performance, resilience, accessibility, and business invariants.</p>
+      </div>
+      <a class="next-peek" href="#loop"><span>Next</span><strong>One hypothesis at a time ↓</strong></a>
+    </section>
+
+    <section id="loop">
+      <div class="section-inner">
+        <p class="eyebrow">Diagnostic Loop · One Hypothesis At A Time</p>
+        <h2>"Something is wrong with networking" is not falsifiable. This is.</h2>
+        <p class="lead">The abstract loop below always runs in the same order. Step through a worked case to see it applied to a real symptom.</p>
+        <div class="loop-strip" id="loop-strip" aria-label="Nine-step diagnostic loop">
+          <span data-loop="0">Symptom</span><span data-loop="1">Locate boundary</span><span data-loop="2">Observe</span><span data-loop="3">Form hypothesis</span><span data-loop="4">Choose test</span><span data-loop="5">Compare result</span><span data-loop="6">Identify cause</span><span data-loop="7">Smallest correction</span><span data-loop="8">Verify + record</span>
+        </div>
+        <article class="lab-shell" aria-labelledby="loop-title">
+          <div class="lab-heading"><div><p class="eyebrow">Worked Case</p><h3 id="loop-title">The React page loads, the API status card fails</h3></div><p>Reveal each step in order and watch the matching stage light up above.</p></div>
+          <ul id="loop-queue" class="question-queue" aria-live="polite">
+            <li data-q="0"><strong>Observation 1</strong>The browser Network tab shows the request is sent to http://127.0.0.1:8001/api/status.</li>
+            <li data-q="1"><strong>Observation 2</strong>curl -i http://127.0.0.1:8000/api/status returns the expected body.</li>
+            <li data-q="2"><strong>Hypothesis</strong>The frontend is configured with the wrong API port.</li>
+            <li data-q="3"><strong>Discriminating test</strong>Inspect the configured API base URL and compare it with the URL in the Network tab and the known API listener.</li>
+            <li data-q="4"><strong>Result</strong>Frontend config points to port 8001; backend logs show no matching request.</li>
+            <li data-q="5"><strong>Root cause (bounded)</strong>For this run, the frontend requested the wrong port, so the intended API route was never targeted.</li>
+            <li data-q="6"><strong>Fix</strong>Correct the development base URL to port 8000 and restart/rebuild the frontend as required by how the config is loaded.</li>
+            <li data-q="7"><strong>Verification</strong>Confirm the browser request now targets port 8000, inspect the response and Access-Control-Allow-Origin, and verify the UI displays the body.</li>
+            <li data-q="8"><strong>Prevention</strong>Add a startup/config check or browser integration test asserting the deployed frontend calls the expected API path. Keep the URL in documented environment config; never place a secret in a public client bundle.</li>
+          </ul>
+          <div id="loop-controls" class="lab-controls"><button id="loop-next" type="button">Reveal next step</button><button id="loop-reset" type="button">Reset</button></div>
+          <p id="loop-status" class="lab-status" role="status" aria-live="polite"><strong>0 of 9 revealed.</strong> The evidence justifies a narrow conclusion about this failure — not a claim that all networking is healthy.</p>
+        </article>
+      </div>
+      <a class="next-peek" href="#safe-action"><span>Next</span><strong>Choosing the smallest safe action ↓</strong></a>
+    </section>
+
+    <section id="safe-action">
+      <div class="section-inner">
+        <p class="eyebrow">Choose The Smallest Safe Next Action</p>
+        <h2>Maximize information. Minimize risk.</h2>
+        <p class="lead">Before running any diagnostic action, attach each question to the decision you're about to make.</p>
+        <div class="control-stage">
+          <div id="control-list" class="control-list" role="group" aria-label="Attach each question before acting">
+            <button type="button" data-control="Plausible" aria-pressed="false">What hypotheses are still plausible? <span>Narrow the field before acting.</span></button>
+            <button type="button" data-control="Expected" aria-pressed="false">What result would I expect if each were true? <span>Make each hypothesis falsifiable.</span></button>
+            <button type="button" data-control="Distinguish" aria-pressed="false">Which observation distinguishes them? <span>Pick a test that actually discriminates.</span></button>
+            <button type="button" data-control="State change" aria-pressed="false">Does this action change system state? <span>Prefer read-only until the cause narrows.</span></button>
+            <button type="button" data-control="Exposure" aria-pressed="false">Could it expose data, destroy work, or widen access? <span>Consider cost and blast radius.</span></button>
+            <button type="button" data-control="Rollback" aria-pressed="false">Is there a safe rollback or cleanup step? <span>Never run an action you can't undo.</span></button>
+          </div>
+          <div id="control-core" class="control-core" role="img" aria-label="Next action with zero of six questions attached">
+            <div>
+              <p class="eyebrow">Next action</p>
+              <h3>Attach each question</h3>
+              <ul id="control-tags" class="control-tags" aria-hidden="true"><li>Plausible</li><li>Expected</li><li>Distinguish</li><li>State change</li><li>Exposure</li><li>Rollback</li></ul>
+            </div>
+          </div>
+        </div>
+        <div class="control-metrics" aria-label="Attachment counts">
+          <div><output id="control-count">0 / 6</output><span>questions attached</span></div>
+          <div><output id="control-remark">Read-only first</output><span>default posture</span></div>
+        </div>
+        <p class="prose">If restarting a process temporarily restores service, that can be a valid mitigation under time pressure — it does not establish the cause. Prefer <strong>mitigation now, cause investigation afterward</strong> over calling "restart" a root cause.</p>
+      </div>
+      <a class="next-peek" href="#review"><span>Next</span><strong>Reviewing AI-generated operational artifacts ↓</strong></a>
+    </section>
+
+    <section id="review">
+      <div class="section-inner">
+        <p class="eyebrow">Review AI-Generated Artifacts As Executable Decisions</p>
+        <h2>Valid YAML is one gate. It is not the only gate.</h2>
+        <p class="lead">A Dockerfile, manifest, workflow, or script is a proposal. Flip each dimension to see the question a careful reviewer asks.</p>
+        <div id="review-grid" class="contract-grid" role="group" aria-label="Eight review dimensions, click to flip">
+          <button class="contract-card" type="button" aria-pressed="false" data-r="0"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">01</span><strong>Intent</strong></div>
+            <div class="contract-face contract-back"><strong>Does this change solve the requirement that was requested?</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-r="1"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">02</span><strong>Context</strong></div>
+            <div class="contract-face contract-back"><strong>Does it match the repo layout, environment, versions, ports, and deployment topology?</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-r="2"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">03</span><strong>Permissions</strong></div>
+            <div class="contract-face contract-back"><strong>Does it ask only for the authority required? Are workflow/role permissions scoped?</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-r="3"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">04</span><strong>Secrets/data</strong></div>
+            <div class="contract-face contract-back"><strong>Could any key, token, personal data, or internal URL leak into source, logs, images, or client bundles?</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-r="4"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">05</span><strong>Failure behavior</strong></div>
+            <div class="contract-face contract-back"><strong>What happens on timeout, unavailable dependency, invalid config, non-2xx, restart, or partial failure?</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-r="5"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">06</span><strong>Observability</strong></div>
+            <div class="contract-face contract-back"><strong>What signal shows success, what signal exposes failure — and is it visible to the on-call operator?</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-r="6"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">07</span><strong>Reversibility</strong></div>
+            <div class="contract-face contract-back"><strong>Can the change be undone? What side effect would survive a rollback?</strong></div>
+          </div></button>
+          <button class="contract-card" type="button" aria-pressed="false" data-r="7"><div class="contract-inner">
+            <div class="contract-face"><span class="idx">08</span><strong>Verification</strong></div>
+            <div class="contract-face contract-back"><strong>What exact evidence proves the relevant outcome after the change ships?</strong></div>
+          </div></button>
+        </div>
+        <p id="review-status" class="lab-status" role="status" aria-live="polite" style="margin-top:28px;"><strong>0 of 8 reviewed.</strong> Syntax validity passes none of these questions by itself.</p>
+      </div>
+      <a class="next-peek" href="#template"><span>Next</span><strong>A real incident note template ↓</strong></a>
+    </section>
+
+    <section id="template">
+      <div class="section-inner">
+        <p class="eyebrow">Incident Note Template</p>
+        <h2>Fill it without adding assumptions.</h2>
+        <p class="lead">Type into the fields as you work a real or practice incident. Nothing here is graded or sent anywhere.</p>
+        <article class="lab-shell" aria-labelledby="template-title">
+          <div class="lab-heading"><div><p class="eyebrow">Incident Note</p><h3 id="template-title">"Tests not executed" is deliberately on this list</h3></div><p>It stops absence of evidence from silently becoming evidence of success.</p></div>
+          <div id="worksheet-grid" class="worksheet-grid">
+            <div class="worksheet-field"><label for="t1">Incident / lab ID</label><input id="t1" type="text"></div>
+            <div class="worksheet-field"><label for="t2">Time window</label><input id="t2" type="text"></div>
+            <div class="worksheet-field"><label for="t3">User-visible symptom</label><input id="t3" type="text"></div>
+            <div class="worksheet-field"><label for="t4">Expected behavior</label><input id="t4" type="text"></div>
+            <div class="worksheet-field"><label for="t5">Actual behavior</label><input id="t5" type="text"></div>
+            <div class="worksheet-field"><label for="t6">Impact and scope</label><input id="t6" type="text"></div>
+            <div class="worksheet-field"><label for="t7">Relevant revision / artifact version</label><input id="t7" type="text"></div>
+            <div class="worksheet-field"><label for="t8">Direct observations (source + timestamp)</label><input id="t8" type="text"></div>
+            <div class="worksheet-field"><label for="t9">Hypotheses considered</label><input id="t9" type="text"></div>
+            <div class="worksheet-field"><label for="t10">Tests performed and results</label><input id="t10" type="text"></div>
+            <div class="worksheet-field"><label for="t11">Root cause (bounded to evidence)</label><input id="t11" type="text"></div>
+            <div class="worksheet-field"><label for="t12">Mitigation / correction</label><input id="t12" type="text"></div>
+            <div class="worksheet-field"><label for="t13">Verification evidence</label><input id="t13" type="text"></div>
+            <div class="worksheet-field"><label for="t14">Known remaining uncertainty</label><input id="t14" type="text"></div>
+            <div class="worksheet-field"><label for="t15">Prevention action</label><input id="t15" type="text"></div>
+            <div class="worksheet-field"><label for="t16">Cleanup completed</label><input id="t16" type="text"></div>
+            <div class="worksheet-field"><label for="t17">Tests not executed</label><input id="t17" type="text"></div>
+          </div>
+          <div class="lab-controls"><button id="worksheet-clear" type="button">Clear note</button></div>
+          <p id="worksheet-status" class="lab-status" role="status" aria-live="polite"><strong>0 of 17 fields filled.</strong></p>
+        </article>
+      </div>
+      <a class="next-peek" href="#exit"><span>Next</span><strong>Exit assessment ↓</strong></a>
+    </section>
+
+    <section id="exit">
+      <div class="section-inner">
+        <p class="eyebrow">Exit Assessment</p>
+        <h2>Four questions. Click each to check your answer.</h2>
+        <div id="exit-board" class="evidence-grid" role="group" aria-label="Four exit assessment questions; click each to reveal the strong answer">
+          <button class="evidence-card" type="button" data-evidence="q1" aria-pressed="false"><span class="tag">Question 1</span><strong>A CLI command returns exit code 0 after applying configuration. Is the service healthy?</strong><span class="reveal-note">No. Exit code 0 proves the command itself completed without error — it is rung 1-2 evidence at most, not a listener, route, contract, or user-outcome check.</span></button>
+          <button class="evidence-card" type="button" data-evidence="q2" aria-pressed="false"><span class="tag">Question 2</span><strong>curl to the FastAPI endpoint succeeds, but browser fetch fails with a CORS message. Does that prove the API is down?</strong><span class="reveal-note">No. CORS is a browser-enforced read policy, not server availability. The server can be healthy and reachable while the browser is still blocked from reading the response.</span></button>
+          <button class="evidence-card" type="button" data-evidence="q3" aria-pressed="false"><span class="tag">Question 3</span><strong>The API process is restarted and the UI now works. Can the incident be closed with "resolved by restart" as root cause?</strong><span class="reveal-note">No. A restart is a mitigation, not a cause. The process might have exited from invalid config, a crash on request, resource pressure, or a missing dependency — each demands separate evidence.</span></button>
+          <button class="evidence-card" type="button" data-evidence="q4" aria-pressed="false"><span class="tag">Question 4</span><strong>An AI-created workflow asks for broad write permission, uses correct YAML, and passes linting. Should it merge?</strong><span class="reveal-note">No, not on that basis alone. Syntax validity and lint passing are only one review dimension — permissions, secrets, failure behavior, observability, reversibility, and verification all still need an answer.</span></button>
+        </div>
+        <p id="exit-status" class="lab-status evidence-status" role="status" aria-live="polite"><strong>0 of 4 revealed.</strong> Click each question to check your reasoning against the strong answer.</p>
+      </div>
+      <a class="next-peek" href="#takeaways"><span>Next</span><strong>Takeaways and sources ↓</strong></a>
+    </section>
+
+    <section id="takeaways">
+      <div class="section-inner">
+        <p class="eyebrow">Key Takeaways</p>
+        <h2>Uncertainty stays visible. Certainty is earned.</h2>
+        <ul class="takeaway-list">
+          <li><strong>Eight different verbs.</strong> Observation, inference, hypothesis, test, root cause, fix, verification, and prevention are not interchangeable.</li>
+          <li><strong>The ladder doesn't skip rungs.</strong> Evidence one rung up does not establish the rung above it.</li>
+          <li><strong>Falsifiable, not vague.</strong> "Something is wrong with networking" can't be tested; a specific port mismatch can.</li>
+          <li><strong>Prefer read-only first.</strong> Maximize information, minimize risk, before mutating system state.</li>
+          <li><strong>Syntax valid ≠ safe to merge.</strong> Review AI-generated artifacts against intent, context, permissions, secrets, failure behavior, observability, reversibility, and verification.</li>
+          <li><strong>Mitigation ≠ root cause.</strong> A restart that restores service still needs a cause investigation afterward.</li>
+        </ul>
+      </div>
+      <a class="next-peek" href="#sources"><span>Next</span><strong>Sources ↓</strong></a>
+    </section>
+
+    <section id="sources">
+      <div class="section-inner">
+        <p class="eyebrow">Sources</p>
+        <h2>What this lesson draws on.</h2>
+        <div class="sources">
+          <ul>
+            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS">MDN — CORS guide</a></li>
+            <li><a href="https://fastapi.tiangolo.com/tutorial/cors/">FastAPI — CORS tutorial</a></li>
+            <li><a href="https://vite.dev/guide/env-and-mode">Vite — Environment variables and modes</a></li>
+            <li><a href="https://docs.github.com/en/actions/reference/security/secure-use">GitHub Docs — Secure use reference for GitHub Actions</a></li>
+            <li><a href="https://sre.google/workbook/postmortem-culture/">Google SRE Workbook — Postmortem Culture</a></li>
+            <li><a href="https://sre.google/sre-book/monitoring-distributed-systems/">Google SRE — Monitoring Distributed Systems</a></li>
+          </ul>
+        </div>
+        <div class="ledger-wrap">
+          <h3>System-State Ladder Reference</h3>
+          <table>
+            <thead><tr><th>Rung</th><th>Claim</th><th>Evidence</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Rung">1</td><td data-label="Claim">Artifact present</td><td data-label="Evidence">File diff, commit, registry metadata</td></tr>
+              <tr><td data-label="Rung">2</td><td data-label="Claim">Process started</td><td data-label="Evidence">Process output, process table, container status</td></tr>
+              <tr><td data-label="Rung">3</td><td data-label="Claim">Listener reachable</td><td data-label="Evidence">TCP connection, direct HTTP check</td></tr>
+              <tr><td data-label="Rung">4</td><td data-label="Claim">Route responds</td><td data-label="Evidence">curl -i, API test, response body</td></tr>
+              <tr><td data-label="Rung">5</td><td data-label="Claim">Contract holds</td><td data-label="Evidence">Status, schema, validation, error-case tests</td></tr>
+              <tr><td data-label="Rung">6</td><td data-label="Claim">End-to-end path works</td><td data-label="Evidence">Browser Network record + rendered UI state</td></tr>
+              <tr><td data-label="Rung">7</td><td data-label="Claim">User outcome holds</td><td data-label="Evidence">Acceptance test and product-level evidence</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner"><span>GRO-L03 · Evidence-First Operations</span><span>Week 1 · GroundOps</span></div>
+    <nav class="lesson-pager" aria-label="Lesson navigation">
+      <a href="GRO-L02-trace-the-full-stack-request.html"><span class="pager-dir">&larr; Previous</span><span class="pager-title">GRO-L02 · Trace the Full-Stack Request</span></a>
+      <a class="pager-next" href="GIT-L01-what-does-a-git-object-id-identify.html"><span class="pager-dir">Next &rarr;</span><span class="pager-title">GIT-L01 · What Does a Git Object ID Identify?</span></a>
+    </nav>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script>
+    /* ---------- Verb flip cards ---------- */
+    document.querySelectorAll('#verb-grid .contract-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        card.setAttribute('aria-pressed', String(card.getAttribute('aria-pressed') !== 'true'));
+        card.dataset.everOpened = '1';
+        const seen = document.querySelectorAll('#verb-grid .contract-card[data-ever-opened="1"]').length;
+        document.querySelector('#verb-status').innerHTML = seen === 8
+          ? '<strong>8 of 8 reviewed.</strong> Keep these labels separate in every incident note you write.'
+          : `<strong>${seen} of 8 reviewed.</strong> Flip every card — these words are not interchangeable.`;
+      });
+    });
+
+    /* ---------- Ladder accordion ---------- */
+    document.querySelectorAll('#ladder-list .ladder-rung').forEach((rung) => {
+      rung.addEventListener('click', () => {
+        const panel = document.querySelector(`.ladder-panel[data-panel="${rung.dataset.rung}"]`);
+        const isOpen = rung.getAttribute('aria-expanded') === 'true';
+        rung.setAttribute('aria-expanded', String(!isOpen));
+        panel.classList.toggle('is-open', !isOpen);
+      });
+    });
+
+    /* ---------- Diagnostic loop reveal ---------- */
+    let loopRevealed = 0;
+    const totalLoop = document.querySelectorAll('#loop-queue li').length;
+    function renderLoop() {
+      document.querySelectorAll('#loop-queue li').forEach((li) => li.classList.toggle('is-shown', Number(li.dataset.q) < loopRevealed));
+      document.querySelectorAll('#loop-strip span').forEach((span) => span.classList.toggle('is-active', Number(span.dataset.loop) < loopRevealed));
+      document.querySelector('#loop-next').disabled = loopRevealed >= totalLoop;
+      document.querySelector('#loop-status').innerHTML = loopRevealed >= totalLoop
+        ? '<strong>All 9 revealed.</strong> The evidence justifies a narrow conclusion about this failure — not a claim that all networking is healthy.'
+        : `<strong>${loopRevealed} of 9 revealed.</strong> Each step narrows the hypothesis before the next one runs.`;
+    }
+    document.querySelector('#loop-next').addEventListener('click', () => { loopRevealed = Math.min(totalLoop, loopRevealed + 1); renderLoop(); });
+    document.querySelector('#loop-reset').addEventListener('click', () => { loopRevealed = 0; renderLoop(); });
+    renderLoop();
+
+    /* ---------- Safe-action controls / reference core ---------- */
+    const attachedControls = new Set();
+    function renderControls() {
+      document.querySelectorAll('#control-list button').forEach((btn) => btn.setAttribute('aria-pressed', String(attachedControls.has(btn.dataset.control))));
+      document.querySelectorAll('#control-tags li').forEach((li) => li.classList.toggle('is-on', attachedControls.has(li.textContent)));
+      document.querySelector('#control-count').textContent = `${attachedControls.size} / 6`;
+      document.querySelector('#control-core').setAttribute('aria-label', `Next action with ${attachedControls.size} of six questions attached`);
+      document.querySelector('#control-core h3').textContent = attachedControls.size === 6 ? 'All six questions attached' : 'Attach each question';
+    }
+    document.querySelectorAll('#control-list button').forEach((btn) => btn.addEventListener('click', () => {
+      attachedControls.has(btn.dataset.control) ? attachedControls.delete(btn.dataset.control) : attachedControls.add(btn.dataset.control);
+      renderControls();
+    }));
+    renderControls();
+
+    /* ---------- Review matrix flip cards ---------- */
+    document.querySelectorAll('#review-grid .contract-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        card.setAttribute('aria-pressed', String(card.getAttribute('aria-pressed') !== 'true'));
+        card.dataset.everOpened = '1';
+        const seen = document.querySelectorAll('#review-grid .contract-card[data-ever-opened="1"]').length;
+        document.querySelector('#review-status').innerHTML = seen === 8
+          ? '<strong>8 of 8 reviewed.</strong> Syntax validity passed none of these questions by itself.'
+          : `<strong>${seen} of 8 reviewed.</strong> Syntax validity passes none of these questions by itself.`;
+      });
+    });
+
+    /* ---------- Incident note worksheet ---------- */
+    const worksheetInputs = [...document.querySelectorAll('#worksheet-grid input')];
+    function renderWorksheet() {
+      const filled = worksheetInputs.filter((i) => i.value.trim().length > 0).length;
+      document.querySelector('#worksheet-status').innerHTML = filled === worksheetInputs.length
+        ? '<strong>17 of 17 fields filled.</strong> Leaving "tests not executed" blank is itself a claim — make sure it is true.'
+        : `<strong>${filled} of ${worksheetInputs.length} fields filled.</strong>`;
+    }
+    worksheetInputs.forEach((input) => input.addEventListener('input', renderWorksheet));
+    document.querySelector('#worksheet-clear').addEventListener('click', () => { worksheetInputs.forEach((i) => i.value = ''); renderWorksheet(); });
+    renderWorksheet();
+
+    /* ---------- Exit assessment board ---------- */
+    document.querySelectorAll('#exit-board .evidence-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const pressed = card.getAttribute('aria-pressed') === 'true';
+        card.setAttribute('aria-pressed', String(!pressed));
+        const openCount = document.querySelectorAll('#exit-board .evidence-card[aria-pressed="true"]').length;
+        document.querySelector('#exit-status').innerHTML = openCount === 4
+          ? '<strong>All four revealed.</strong> Every one of these is "no" for the same reason: the evidence given supports a narrower claim than the one being asserted.'
+          : `<strong>${openCount} of 4 revealed.</strong> Click each question to check your reasoning against the strong answer.`;
+      });
+    });
+
+    /* ---------- Reading progress + active nav ---------- */
+    const progress = document.querySelector('#reading-progress');
+    const navLinks = [...document.querySelectorAll('.nav-links a[href^="#"]')];
+    const navTargets = navLinks.map((link) => document.querySelector(link.hash)).filter(Boolean);
+    function setCurrentSection(id) {
+      navLinks.forEach((link) => link.hash === `#${id}` ? link.setAttribute('aria-current', 'location') : link.removeAttribute('aria-current'));
+    }
+    function updateProgress() {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      const depth = scrollable <= 0 ? 1 : Math.min(1, Math.max(0, window.scrollY / scrollable));
+      progress.style.width = `${depth * 100}%`;
+      const line = window.scrollY + window.innerHeight * .32;
+      const active = navTargets.filter((s) => s.offsetTop <= line).at(-1) || navTargets[0];
+      setCurrentSection(active.id);
+    }
+    setCurrentSection(navTargets[0]?.id);
+    updateProgress();
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    window.addEventListener('resize', updateProgress, { passive: true });
+
+    /* ---------- Motion: reveal + cursor light ---------- */
+    document.documentElement.classList.add('js-enhanced');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const revealTargets = [...document.querySelectorAll('main > section .section-inner > h2, main > section .section-inner > .lead, .contract-grid, .ladder-list, .lab-shell, .control-stage, .evidence-grid, .takeaway-list, .ledger-wrap')];
+    revealTargets.forEach((el) => el.classList.add('reveal'));
+    let cursorLight;
+    function enableCursorLight() {
+      if (!finePointer.matches || reduceMotion.matches || cursorLight) return;
+      cursorLight = document.createElement('div');
+      cursorLight.className = 'cursor-light';
+      cursorLight.setAttribute('aria-hidden', 'true');
+      document.body.append(cursorLight);
+      window.addEventListener('pointermove', (e) => { if (cursorLight) cursorLight.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate3d(-50%, -50%, 0)`; }, { passive: true });
+    }
+    function revealAll() { revealTargets.forEach((el) => el.classList.add('in')); }
+    function configureMotion() {
+      if (reduceMotion.matches) { revealAll(); return; }
+      enableCursorLight();
+      if (typeof window.gsap === 'object' && typeof window.ScrollTrigger === 'function') {
+        window.gsap.registerPlugin(window.ScrollTrigger);
+        revealTargets.forEach((el) => window.gsap.fromTo(el, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: .7, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%', once: true } }));
+      } else if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries, obs) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add('in'); obs.unobserve(entry.target); } }), { rootMargin: '0px 0px -8%', threshold: .08 });
+        revealTargets.forEach((el) => observer.observe(el));
+      } else revealAll();
+    }
+    configureMotion();
+    reduceMotion.addEventListener?.('change', configureMotion);
+  </script>
+</body>
+</html>
