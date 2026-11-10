@@ -1,620 +1,263 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GRO-L02 — Trace the Full-Stack Request</title>
+<meta name="description" content="VoidInfinity GroundOps L02: trace one browser request across two servers, scope each diagnostic instrument, and separate look-alike failures with evidence.">
+<title>GRO-L02 — Trace the Full-Stack Request | VoidInfinity</title>
 <style>
-  :root {
-    --bg: #191817;
-    --fg: #f2efe9;
-    --sub: #a39e92;
-    --line: #33302b;
-    --panel: #201e1b;
-    --accent: #cc785c;
-    --accent-dim: #8a5440;
-    --accent-soft: rgba(204, 120, 92, .14);
-    --cream: #e8e2d4;
-    --good: #9caf88;
-    --bad: #c9644f;
-    --radius: 22px;
-    --ease: cubic-bezier(.16, 1, .3, 1);
+:root{--bg:#191817;--fg:#f2efe9;--sub:#b3ada2;--muted:#8f897f;--line:#39352f;--panel:#211f1b;--panel2:#141311;--accent:#d88768;--accent-dim:#8d5742;--soft:rgba(216,135,104,.12);--good:#a8c293;--bad:#e18470;--blue:#9db8d1;--radius:18px;--max:1120px;--ease:cubic-bezier(.16,1,.3,1)}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:90px}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased}a{color:var(--fg);text-decoration-color:var(--accent);text-underline-offset:4px}a:hover{color:var(--accent)}button,input,textarea{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}::selection{background:var(--accent);color:#171210}.wrap{width:min(var(--max),calc(100% - 48px));margin-inline:auto}.reading-progress{position:fixed;z-index:1000;top:0;left:0;width:0;height:3px;background:var(--accent)}.nav{position:sticky;top:0;z-index:900;background:rgba(25,24,23,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:22px;min-height:62px}.brand{font-size:13px;font-weight:850;letter-spacing:.04em;white-space:nowrap}.brand span{color:var(--accent)}.navlinks{display:flex;gap:16px;overflow:auto;white-space:nowrap;font-size:12px;color:var(--sub)}.navlinks a{text-decoration:none;color:var(--sub);padding:10px 0}.navlinks a:hover{color:var(--fg)}.hero{padding:88px 0 76px;border-bottom:1px solid var(--line);background:radial-gradient(ellipse at 82% 8%,rgba(216,135,104,.13),transparent 36%),linear-gradient(180deg,#1d1b18,var(--bg))}.eyebrow{margin:0 0 14px;color:var(--accent);text-transform:uppercase;letter-spacing:.13em;font-size:11px;font-weight:850}.hero h1{max-width:950px;font-size:clamp(42px,7.6vw,84px);line-height:1.01;letter-spacing:-.045em;margin:0 0 24px}.hero h1 em{font-style:normal;color:var(--accent)}.lead{max-width:800px;color:var(--sub);font-size:clamp(17px,2vw,21px);line-height:1.65}.promise{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin-top:42px;background:var(--line);border:1px solid var(--line)}.promise article{background:var(--panel2);padding:20px}.promise strong{display:block;font-size:14px;margin-bottom:6px}.promise p{margin:0;color:var(--sub);font-size:13px}.note{padding:18px 20px;border-left:3px solid var(--accent);background:var(--soft);color:var(--fg);margin:28px 0}.note p:last-child{margin-bottom:0}.section{padding:78px 0;border-bottom:1px solid var(--line)}.section.alt{background:var(--panel2)}h2{font-size:clamp(30px,4.6vw,50px);line-height:1.1;letter-spacing:-.03em;margin:0 0 18px;max-width:900px}h3{font-size:21px;line-height:1.25;margin:0 0 12px}h4{font-size:16px;margin:0 0 7px}p{margin:0 0 16px}.section-intro{color:var(--sub);max-width:820px;font-size:17px}.small{font-size:13px;color:var(--sub)}.grid{display:grid;gap:14px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{border:1px solid var(--line);background:var(--panel);padding:22px;border-radius:14px;min-width:0}.card p:last-child{margin-bottom:0}.card p{color:var(--sub)}.card .kicker{font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--accent);font-weight:850;margin-bottom:8px}.num{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--accent-dim);color:var(--accent);font-size:13px;font-weight:800;margin-bottom:12px}.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:30px 0}.flowstep{position:relative;border:1px solid var(--line);background:#11100e;padding:17px 13px;border-radius:12px;min-height:123px;text-align:left;color:var(--fg)}.flowstep::after{content:"→";position:absolute;right:-12px;top:40%;z-index:2;color:var(--accent);font-weight:900}.flowstep:last-child::after{content:""}.flowstep strong{display:block;font-size:14px;margin-bottom:5px}.flowstep span{display:block;font-size:12px;line-height:1.45;color:var(--sub)}.flowstep[aria-pressed="true"]{border-color:var(--accent);background:var(--soft)}.detailpanel{margin-top:14px;border:1px solid var(--accent-dim);background:#100e0c;padding:24px;border-radius:14px;min-height:170px}.detailpanel .label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:850}.detailpanel p{color:var(--sub)}.detailpanel .example{padding:13px 15px;margin-top:12px;border-left:2px solid var(--accent);background:var(--soft);color:var(--fg)}.evidence-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:30px}.evidence{display:flex;flex-direction:column;align-items:flex-start;gap:10px;border:0;text-align:left;padding:22px;background:var(--panel);color:var(--fg);min-height:180px}.evidence .tag{font-size:10px;color:var(--accent);letter-spacing:.1em;font-weight:850;text-transform:uppercase}.evidence p{color:var(--sub);font-size:13px;margin:0}.evidence .reveal{display:none;padding-top:10px;border-top:1px dashed var(--line);color:var(--fg)}.evidence[aria-pressed="true"]{background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.evidence[aria-pressed="true"] .reveal{display:block}.status{padding:15px 18px;border-left:2px solid var(--accent);background:#100e0c;color:var(--sub);margin-top:18px;min-height:56px}.status strong{color:var(--fg)}.fourstage{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:28px 0}.fourstage button{border:0;text-align:left;background:var(--panel);color:var(--fg);padding:20px;min-height:150px}.fourstage button[aria-pressed="true"]{background:var(--soft);box-shadow:inset 0 3px var(--accent)}.fourstage button .number{display:block;color:var(--accent);font-size:11px;font-weight:850;letter-spacing:.1em;margin-bottom:10px}.fourstage button span:last-child{display:block;color:var(--sub);font-size:13px;margin-top:7px}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:32px}.control-card{border:1px solid var(--line);background:var(--panel);border-radius:14px;overflow:hidden}.control-head{display:flex;gap:14px;padding:20px 20px 0;align-items:flex-start}.control-head .num{flex:none}.control-head p{font-size:13px;color:var(--sub);margin-bottom:0}.control-body{padding:15px 20px 22px}.control-body p{font-size:14px;color:var(--sub)}.control-body ul{padding-left:19px;margin:10px 0 16px}.control-body li{margin:6px 0;color:var(--sub);font-size:14px}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{padding:13px;background:#11100e;border-radius:10px;border:1px solid var(--line)}.mini strong{font-size:12px;display:block;color:var(--fg);margin-bottom:5px}.mini p{font-size:12px;margin:0}.table-wrap{overflow-x:auto;margin-top:26px}table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:14px 15px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.09em}td{color:var(--sub);font-size:14px}td:first-child{color:var(--fg);font-weight:750}.code{font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0e0d0b;border:1px solid var(--line);color:#f4e7da;border-radius:10px;padding:16px;overflow-wrap:anywhere}.term{color:var(--accent);font-weight:800}.callout-good{border-left:3px solid var(--good);padding:16px 18px;background:rgba(168,194,147,.08);margin:18px 0}.callout-warn{border-left:3px solid var(--bad);padding:16px 18px;background:rgba(225,132,112,.08);margin:18px 0}.steps{counter-reset:step;display:grid;gap:10px;margin-top:25px}.step{counter-increment:step;display:grid;grid-template-columns:46px 1fr;gap:15px;padding:17px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.step::before{content:counter(step,decimal-leading-zero);color:var(--accent);font-weight:900;font-size:13px;padding-top:3px}.step p{color:var(--sub);margin:0;font-size:14px}.step strong{display:block;margin-bottom:5px}.contract{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:28px}.contract details,.glossary details{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:0 17px}.contract summary,.glossary summary{cursor:pointer;padding:17px 25px 17px 0;font-weight:750;position:relative;list-style:none}.contract summary::-webkit-details-marker,.glossary summary::-webkit-details-marker{display:none}.contract summary::after,.glossary summary::after{content:"+";position:absolute;right:0;color:var(--accent);font-size:21px;top:12px}.contract details[open] summary::after,.glossary details[open] summary::after{content:"−"}.contract details p{font-size:14px;color:var(--sub)}.evidence-pill{font-size:12px;color:var(--accent);border-top:1px dashed var(--line);padding-top:12px;margin-top:10px}.quiz{border:1px solid var(--accent-dim);padding:26px;border-radius:16px;background:linear-gradient(150deg,#211c17,#11100e);margin-top:26px}.quiz+.quiz{margin-top:15px}.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:18px}.option{border:1px solid var(--line);border-radius:10px;background:#11100e;padding:14px;text-align:left;color:var(--fg);font-size:14px}.option:hover{border-color:var(--accent)}.option[disabled]{cursor:default;opacity:.8}.option.correct{border-color:var(--good);background:rgba(168,194,147,.12)}.option.incorrect{border-color:var(--bad);background:rgba(225,132,112,.12)}.answer{display:none;margin-top:16px;padding:15px 17px;background:#0e0d0b;border-left:3px solid var(--accent);color:var(--sub)}.answer.show{display:block}.answer strong{color:var(--fg)}.glossary-tools{display:flex;gap:12px;align-items:center;margin:25px 0 16px}.glossary-tools input{width:min(440px,100%);background:#100e0c;border:1px solid var(--line);border-radius:10px;color:var(--fg);padding:13px 15px}.glossary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.glossary details{padding-inline:15px}.glossary summary{font-size:14px}.glossary details p{font-size:13px;color:var(--sub);margin:0 0 16px}.source-list{display:grid;gap:12px;list-style:none;padding:0}.source-list li{padding:15px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}.source-list a{font-weight:750}.source-list p{margin:6px 0 0;color:var(--sub);font-size:13px}.exit{max-width:820px}.exit textarea{display:block;width:100%;min-height:105px;margin:16px 0;padding:14px;background:#100e0c;border:1px solid var(--line);border-radius:10px;color:var(--fg)}.btn{border:1px solid var(--accent-dim);border-radius:999px;background:var(--soft);color:var(--fg);padding:10px 16px;font-weight:750;font-size:13px}.btn:hover{background:rgba(216,135,104,.22)}.footer{padding:35px 0 55px;color:var(--sub);font-size:12px}.footer-inner{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}.footer strong{color:var(--fg)}
+@media(max-width:850px){.nav-inner{align-items:flex-start;padding-top:10px;padding-bottom:8px;flex-direction:column;gap:4px}.navlinks{max-width:100%;width:100%}.hero{padding-top:60px}.promise,.grid.three,.evidence-grid{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.flowstep{min-height:0;padding:14px}.flowstep::after{content:"↓";right:14px;top:auto;bottom:-17px}.flowstep:last-child::after{content:""}.fourstage{grid-template-columns:repeat(2,minmax(0,1fr))}.controls,.grid.two,.contract,.glossary{grid-template-columns:1fr}.section{padding:60px 0}.options{grid-template-columns:1fr}}
+@media(max-width:500px){.wrap{width:min(var(--max),calc(100% - 32px))}.hero h1{font-size:42px}.fourstage{grid-template-columns:1fr}.split{grid-template-columns:1fr}.card{padding:18px}.control-head{padding:18px 18px 0}.control-body{padding:12px 18px 18px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+</style>
+<style>
+footer .lesson-pager {
+  display: flex;
+  width: min(1160px, 100%);
+  margin: 20px auto 0;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+footer .lesson-pager a,
+footer .lesson-pager span.pager-next,
+footer .lesson-pager span:first-child {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--fg);
+  transition: border-color .25s var(--ease), background .25s var(--ease);
+}
+footer .lesson-pager a:hover {
+  border-color: var(--accent);
+  background: #241f1a;
+}
+footer .pager-dir {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+footer .pager-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+footer .lesson-pager .pager-next {
+  text-align: right;
+  align-items: flex-end;
+}
+footer .lesson-pager .is-disabled {
+  opacity: .4;
+  pointer-events: none;
+}
+@media (max-width: 620px) {
+  footer .lesson-pager a,
+  footer .lesson-pager span.pager-next,
+  footer .lesson-pager span:first-child {
+    flex: 1 1 100%;
   }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+  footer .lesson-pager .pager-next {
+    text-align: left;
+    align-items: flex-start;
   }
-  button, input, textarea { font: inherit; }
-  button { min-height: 44px; cursor: pointer; }
-  a { color: inherit; text-decoration: none; }
-  a:hover { color: var(--accent); }
-  ::selection { background: var(--accent); color: #1a1512; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
-  .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-
-  #reading-progress {
-    position: fixed; z-index: 1000; top: 0; left: 0; width: 0; height: 2px;
-    background: var(--accent); box-shadow: 0 0 14px rgba(204, 120, 92, .7);
-  }
-
-  .site-nav {
-    position: fixed; z-index: 900; top: 0; right: 0; left: 0;
-    border-bottom: 1px solid rgba(242, 239, 233, .1);
-    background: rgba(25, 24, 23, .66);
-    backdrop-filter: blur(22px) saturate(140%);
-    -webkit-backdrop-filter: blur(22px) saturate(140%);
-  }
-  .site-nav nav { display: flex; width: min(1240px, 100%); min-height: 58px; margin: 0 auto; padding: 0 28px; align-items: center; justify-content: space-between; gap: 24px; }
-  .brand { flex: 0 0 auto; font-size: 14px; font-weight: 800; letter-spacing: .02em; }
-  .nav-links { display: flex; min-width: 0; gap: 18px; color: var(--sub); font-size: 12px; overflow-x: auto; }
-  .brand, .nav-links a { display: inline-flex; min-height: 44px; align-items: center; }
-  .nav-links a { position: relative; white-space: nowrap; }
-  .nav-links a::after {
-    position: absolute; right: 0; bottom: -7px; left: 0; height: 1px; content: "";
-    background: var(--accent); transform: scaleX(0); transition: transform .25s var(--ease);
-  }
-  .nav-links a:hover::after, .nav-links a[aria-current="location"]::after { transform: scaleX(1); }
-  .nav-links a[aria-current="location"] { color: var(--fg); }
-
-  .cursor-light {
-    position: fixed; z-index: 850; top: 0; left: 0; width: 460px; height: 460px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(204, 120, 92, .32) 0%, rgba(232, 226, 212, .08) 42%, transparent 70%);
-    filter: blur(10px); mix-blend-mode: screen; pointer-events: none;
-    transform: translate3d(-50%, -50%, 0); will-change: transform;
-  }
-
-  .js-enhanced .reveal { opacity: 0; transform: translate3d(0, 24px, 0); }
-  .js-enhanced .reveal.in { opacity: 1; transform: translate3d(0, 0, 0); transition: opacity .7s var(--ease), transform .7s var(--ease); }
-
-  main > section { position: relative; min-height: 60vh; padding: 148px max(7vw, 28px) 120px; border-bottom: 1px solid var(--line); }
-  main > section:nth-child(even) { background: var(--panel); }
-  .section-inner { position: relative; z-index: 2; width: min(1160px, 100%); min-width: 0; margin: 0 auto; }
-  .section-inner > * { min-width: 0; }
-
-  .eyebrow { margin: 0 0 14px; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-  h1, h2, h3, p { margin-top: 0; }
-  h1 { max-width: 980px; margin-bottom: 22px; font-size: clamp(38px, 6.4vw, 78px); line-height: 1.04; }
-  h2 { max-width: 860px; margin-bottom: 20px; font-size: clamp(29px, 4.2vw, 50px); line-height: 1.1; }
-  h3 { margin-bottom: 10px; font-size: clamp(18px, 2vw, 23px); line-height: 1.25; }
-  .lead { max-width: 760px; color: var(--sub); font-size: clamp(16px, 1.4vw, 20px); }
-  .prose { max-width: 780px; }
-  .prose p { margin: 16px 0 0; color: var(--sub); }
-  .prose strong, .signal { color: var(--fg); }
-  .signal { text-decoration-color: var(--accent); text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
-  .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
-  blockquote {
-    max-width: 900px; margin: 38px 0; padding: 2px 0 2px 22px; border-left: 3px solid var(--accent);
-    font-size: clamp(20px, 2.3vw, 30px); font-weight: 750; line-height: 1.32;
-  }
-
-  .next-peek {
-    position: relative; z-index: 4; display: flex; width: min(1160px, calc(100% - max(14vw, 56px)));
-    min-height: 50px; margin: 48px auto -50px; padding: 0 18px; border: 1px solid var(--line);
-    background: rgba(16, 15, 14, .92); align-items: center; justify-content: space-between; gap: 18px;
-    color: var(--sub); font-size: 12px; font-weight: 750; text-transform: uppercase;
-  }
-  .next-peek strong { color: var(--fg); font-size: 13px; }
-
-  /* Flow diagram */
-  .flow-diagram { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 48px; align-items: stretch; }
-  .flow-node { position: relative; display: grid; min-height: 140px; padding: 22px; border-top: 2px solid var(--accent); background: #16140f; place-content: center; text-align: center; }
-  .flow-node:not(:last-child)::after { position: absolute; top: 50%; right: -24px; width: 24px; height: 1px; content: ""; background: var(--accent-dim); }
-  .flow-node strong { display: block; color: var(--fg); }
-  .flow-node small { display: block; margin-top: 8px; color: var(--sub); }
-
-  /* Evidence board (reused for failure comparison + mystery) */
-  .evidence-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 44px; background: var(--line); }
-  .evidence-card {
-    min-height: 168px; padding: 24px; background: var(--bg); text-align: left; color: var(--fg);
-    display: flex; flex-direction: column; gap: 10px; border: 0; width: 100%;
-  }
-  main > section:nth-child(even) .evidence-card { background: #16140f; }
-  .evidence-card .tag { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-  .evidence-card p { margin: 0; color: var(--sub); font-size: 14px; }
-  .evidence-card[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
-  .evidence-card .reveal-note { display: none; margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--fg); font-size: 13px; }
-  .evidence-card .reveal-note + .reveal-note { margin-top: 8px; padding-top: 8px; border-top: 0; }
-  .evidence-card[aria-pressed="true"] .reveal-note { display: block; }
-  .evidence-card .caution { color: var(--bad); font-weight: 700; }
-  .evidence-status { margin-top: 28px; }
-
-  /* Stage pipeline (walk + localhost contexts) */
-  .stage-rail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-top: 46px; background: var(--line); }
-  .stage-rail.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .stage-step {
-    min-height: 118px; padding: 20px; background: var(--bg); border: 0; color: var(--sub); text-align: left; width: 100%;
-    display: flex; flex-direction: column; gap: 6px;
-  }
-  main > section:nth-child(even) .stage-step { background: #16140f; }
-  .stage-step .idx { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
-  .stage-step strong { color: var(--fg); font-size: 16px; }
-  .stage-step[aria-pressed="true"] { box-shadow: inset 0 3px 0 var(--accent); background: var(--accent-soft); }
-  .stage-detail {
-    margin-top: 2px; padding: 28px; border: 1px solid var(--line); background: var(--panel);
-    display: grid; gap: 10px;
-  }
-  .stage-detail h3 { color: var(--accent); }
-  .stage-detail p { margin: 0; color: var(--sub); }
-  .stage-detail .example { padding: 14px 16px; border-left: 2px solid var(--accent); background: rgba(204,120,92,.08); color: var(--fg); font-size: 14px; }
-
-  /* Flip cards (instruments) */
-  .contract-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 46px; background: var(--line); perspective: 1200px; }
-  .contract-card { min-height: 220px; background: transparent; border: 0; padding: 0; color: var(--fg); }
-  .contract-inner { position: relative; min-height: 220px; width: 100%; transition: transform .6s var(--ease); transform-style: preserve-3d; }
-  .contract-card[aria-pressed="true"] .contract-inner { transform: rotateY(180deg); }
-  .contract-face {
-    position: absolute; inset: 0; backface-visibility: hidden; padding: 20px; background: var(--bg); color: var(--fg);
-    display: flex; flex-direction: column; gap: 8px; text-align: left;
-  }
-  main > section:nth-child(even) .contract-face { background: #16140f; }
-  .contract-face strong { color: var(--fg); }
-  .contract-face .idx { color: var(--accent); font-size: 11px; font-weight: 800; }
-  .contract-face p { margin: 0; color: var(--sub); font-size: 13px; }
-  .contract-back { transform: rotateY(180deg); background: var(--accent-soft) !important; }
-  .contract-back strong { color: var(--fg); font-size: 13px; }
-  .contract-back .evi { margin-top: 8px; color: var(--accent); font-size: 12px; font-weight: 700; }
-  .contract-back .cannot { margin-top: 6px; color: var(--bad); font-size: 12px; font-weight: 700; }
-
-  /* Lab shell / worksheet */
-  .lab-shell { display: grid; width: min(1080px, 100%); margin-top: 48px; padding: 32px; border: 1px solid var(--accent-dim); border-radius: var(--radius); background: linear-gradient(145deg, #1f1c18, #130f0d 72%); box-shadow: 0 30px 80px rgba(0,0,0,.45); gap: 22px; }
-  .lab-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-  .lab-heading p { max-width: 620px; margin: 0; color: var(--sub); }
-  .code-line { padding: 14px 18px; border: 1px solid var(--line); background: #0f0d0b; color: var(--cream); font-size: 14px; overflow-x: auto; }
-  .lab-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-  .lab-controls button { padding: 10px 17px; border: 1px solid var(--line); border-radius: 999px; background: #211e1a; color: var(--fg); font-weight: 700; }
-  .lab-controls button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-  .lab-status { min-height: 58px; margin: 0; padding: 16px 18px; border-left: 2px solid var(--accent); background: #0f0d0b; color: var(--sub); }
-  .lab-status strong { color: var(--fg); }
-  .worksheet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-  .worksheet-field { display: grid; gap: 6px; }
-  .worksheet-field label { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); }
-  .worksheet-field input { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px; background: #0f0d0b; color: var(--fg); }
-  .worksheet-field input:focus-visible { outline-offset: 2px; }
-
-  /* Quiz */
-  .quiz-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-top: 36px; background: var(--line); }
-  .quiz-option { min-height: 100px; padding: 20px; background: var(--bg); border: 0; text-align: left; color: var(--fg); display: flex; gap: 14px; align-items: flex-start; }
-  main > section:nth-child(even) .quiz-option { background: #16140f; }
-  .quiz-option .letter { color: var(--accent); font-weight: 850; font-size: 18px; flex: 0 0 auto; }
-  .quiz-option p { margin: 0; color: var(--sub); font-size: 14px; }
-  .quiz-option[data-result="correct"] { box-shadow: inset 0 0 0 1px var(--good); background: rgba(156,175,136,.12); }
-  .quiz-option[data-result="incorrect"] { box-shadow: inset 0 0 0 1px var(--bad); background: rgba(201,100,79,.12); }
-  .quiz-option[disabled] { cursor: default; opacity: .85; }
-  .evidence-list { display: grid; gap: 8px; margin: 28px 0 0; padding: 0; list-style: none; }
-  .evidence-list li { padding: 10px 14px; border-left: 2px solid var(--accent); background: rgba(204,120,92,.06); color: var(--sub); font-size: 14px; }
-
-  /* Takeaway list */
-  .takeaway-list { display: grid; gap: 1px; margin-top: 40px; background: var(--line); grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .takeaway-list li { list-style: none; min-height: 90px; padding: 20px 22px; background: var(--bg); color: var(--sub); font-size: 15px; }
-  main > section:nth-child(even) .takeaway-list li { background: #16140f; }
-  .takeaway-list li strong { color: var(--fg); }
-
-  .ledger-wrap { min-width: 0; margin-top: 50px; }
-  table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
-  th, td { padding: 16px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--accent); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
-  td { color: var(--sub); }
-  td:last-child { color: var(--fg); font-weight: 700; }
-  .sources { margin-top: 56px; padding-top: 34px; border-top: 1px solid var(--line); }
-  .sources ul { display: grid; gap: 12px; padding: 0; list-style: none; }
-  .sources a { color: var(--sub); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
-
-  footer { padding: 40px max(7vw, 28px) 70px; color: var(--sub); font-size: 13px; }
-  .footer-inner { display: flex; width: min(1160px, 100%); margin: 0 auto; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
-  .lesson-pager { display: flex; width: min(1160px, 100%); margin: 20px auto 0; gap: 14px; flex-wrap: wrap; }
-  .lesson-pager a, .lesson-pager span.pager-next, .lesson-pager span:first-child {
-    flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; padding: 16px 20px;
-    border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--fg);
-    transition: border-color .25s var(--ease), background .25s var(--ease);
-  }
-  .lesson-pager a:hover { border-color: var(--accent); background: #241f1a; }
-  .pager-dir { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
-  .pager-title { font-size: 14px; font-weight: 700; }
-  .lesson-pager .pager-next { text-align: right; align-items: flex-end; }
-  .lesson-pager .is-disabled { opacity: .4; pointer-events: none; }
-  @media (max-width: 620px) {
-    .lesson-pager a, .lesson-pager span.pager-next, .lesson-pager span:first-child { flex: 1 1 100%; }
-    .lesson-pager .pager-next { text-align: left; align-items: flex-start; }
-  }
-
-  @media (max-width: 1040px) {
-    .nav-links { max-width: 70vw; }
-    .evidence-grid, .quiz-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .stage-rail, .stage-rail.cols-3 { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .contract-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .flow-diagram { grid-template-columns: minmax(0,1fr); }
-    .flow-node:not(:last-child)::after { top: auto; right: 50%; bottom: -24px; width: 1px; height: 24px; }
-    .worksheet-grid { grid-template-columns: minmax(0,1fr); }
-  }
-  @media (max-width: 760px) {
-    main > section { padding: 140px 22px 92px; }
-    .evidence-grid, .quiz-grid, .stage-rail, .stage-rail.cols-3, .contract-grid, .takeaway-list { grid-template-columns: minmax(0,1fr); }
-    .next-peek { width: calc(100% - 44px); margin: 40px auto -40px; }
-    table, thead, tbody, tr, th, td { display: block; }
-    table { min-width: 0; }
-    thead { display: none; }
-    tr { padding: 14px 0; border-bottom: 1px solid var(--line); }
-    td { display: grid; grid-template-columns: minmax(0,.7fr) minmax(0,1.3fr); gap: 12px; padding: 6px 0; border: 0; }
-    td::before { color: var(--accent); content: attr(data-label); font-size: 11px; font-weight: 800; text-transform: uppercase; }
-  }
-  @media (pointer: coarse) { button, a { cursor: default; } .cursor-light { display: none; } }
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-    .js-enhanced .reveal { opacity: 1; transform: none; }
-    .cursor-light { display: none; }
-  }
+}
+</style>
+<style>
+@media(min-width:851px){.trace-flow{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1100px){.trace-flow{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.trace-code{white-space:pre-wrap}
+.trace-worksheet{margin-top:22px;border-color:var(--accent-dim)}
+.worksheet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.worksheet-field{display:grid;gap:6px;min-width:0}
+.worksheet-field label{font-size:11px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:var(--sub)}
+.worksheet-field input{width:100%;min-width:0;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--fg)}
+.worksheet-field input::placeholder{color:var(--muted)}
+.worksheet-actions{display:flex;gap:10px;margin-top:18px}
+@media(max-width:850px){.worksheet-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-  <div id="reading-progress" aria-hidden="true"></div>
-  <header class="site-nav">
-    <nav aria-label="Lesson sections">
-      <a class="brand" href="#mystery">GRO·L02</a>
-      <div class="nav-links">
-        <a href="#mystery">Mystery</a>
-        <a href="#walk">Six Steps</a>
-        <a href="#instruments">Instruments</a>
-        <a href="#failures">Three Failures</a>
-        <a href="#worksheet">Worksheet</a>
-        <a href="#localhost">localhost</a>
-        <a href="#practice">Practice</a>
-        <a href="#takeaways">Takeaways</a>
-        <a href="#sources">Sources</a>
-      </div>
-    </nav>
-  </header>
-
-  <main id="investigation" tabindex="-1">
-
-    <section id="mystery">
-      <div class="section-inner">
-        <p class="eyebrow">GRO-L02 · Trace the Full-Stack Request</p>
-        <h1>The page <span class="signal">renders.</span><br>The data card still fails.</h1>
-        <p class="lead">The Week 1 app is two programs on two ports: a Vite dev server and a FastAPI process. The browser coordinates the UI and initiates the HTTP request. React can load perfectly while the API is down, because the files that render the screen came from a different server than the one the data depends on.</p>
-        <blockquote>Where did the request stop, and what evidence identifies that boundary?</blockquote>
-        <div class="flow-diagram" role="img" aria-label="Three-stage request flow: frontend asset load, browser-initiated API fetch, FastAPI response under browser policy">
-          <div class="flow-node"><strong>Frontend asset load</strong><small>Vite serves HTML / JS / CSS; React renders the root</small></div>
-          <div class="flow-node"><strong>Browser → API fetch</strong><small>A separate request, to a separate host:port</small></div>
-          <div class="flow-node"><strong>Response + browser policy</strong><small>Status, body, and CORS are all independent checks</small></div>
-        </div>
-        <p class="prose">A React screen loading successfully is not evidence the API is reachable. An API's own <code class="mono">/docs</code> page working is not evidence the browser can reach it either — the browser-to-API path has its own requirements.</p>
-      </div>
-      <a class="next-peek" href="#walk"><span>Next</span><strong>Walk the request in six steps ↓</strong></a>
-    </section>
-
-    <section id="walk">
-      <div class="section-inner">
-        <p class="eyebrow">Walk The Request · Six Steps</p>
-        <h2>From the click to the returned JSON.</h2>
-        <p class="lead">Click each step to see what it proves — and, just as important, what it does <em>not</em> prove.</p>
-        <div id="stage-rail" class="stage-rail" role="group" aria-label="Six-step request walk">
-          <button class="stage-step" type="button" data-stage="load" aria-pressed="true"><span class="idx">01</span><strong>Frontend Load</strong><span>Vite serves assets; React renders</span></button>
-          <button class="stage-step" type="button" data-stage="fetch" aria-pressed="false"><span class="idx">02</span><strong>React Fetch</strong><span>fetch() targets an explicit scheme/host/port/path</span></button>
-          <button class="stage-step" type="button" data-stage="api" aria-pressed="false"><span class="idx">03</span><strong>API Boundary</strong><span>ASGI server routes method + path</span></button>
-          <button class="stage-step" type="button" data-stage="status" aria-pressed="false"><span class="idx">04</span><strong>Status &amp; Body</strong><span>HTTP status and body are separate signals</span></button>
-          <button class="stage-step" type="button" data-stage="cors" aria-pressed="false"><span class="idx">05</span><strong>Browser CORS</strong><span>A browser-enforced read policy, not auth</span></button>
-          <button class="stage-step" type="button" data-stage="render" aria-pressed="false"><span class="idx">06</span><strong>React Renders</strong><span>The final user-visible boundary</span></button>
-        </div>
-        <div id="stage-detail" class="stage-detail" role="region" aria-live="polite" aria-label="Selected step detail"></div>
-        <blockquote>Network names and request targets are a list of independent fault boundaries, not one single "is it up?" question.</blockquote>
-      </div>
-      <a class="next-peek" href="#instruments"><span>Next</span><strong>What each instrument can and can't prove ↓</strong></a>
-    </section>
-
-    <section id="instruments">
-      <div class="section-inner">
-        <p class="eyebrow">A Diagnostic Instrument Proves Only Its Part</p>
-        <h2>Six tools. Six different scopes.</h2>
-        <p class="lead">Click a card to flip it and see what that instrument supports — and what it cannot prove alone.</p>
-        <div id="instrument-grid" class="contract-grid" role="group" aria-label="Six diagnostic instruments, click to flip">
-          <button class="contract-card" type="button" aria-pressed="false" data-contract="0"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">01</span><strong>Browser address bar</strong><p>Exact scheme, host, port, path.</p></div>
-            <div class="contract-face contract-back"><strong>Supports: which frontend URL was opened.</strong><span class="cannot">Cannot prove alone: API reachability.</span></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-contract="1"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">02</span><strong>DevTools → Network</strong><p>Request URL, method, status, timing, headers/body.</p></div>
-            <div class="contract-face contract-back"><strong>Supports: whether the browser attempted the call and its network-level result.</strong><span class="cannot">Cannot prove alone: full backend internal reason without server evidence.</span></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-contract="2"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">03</span><strong>DevTools → Console</strong><p>JavaScript errors, browser policy messages.</p></div>
-            <div class="contract-face contract-back"><strong>Supports: client-side exceptions, visible CORS diagnostics.</strong><span class="cannot">Cannot prove alone: that every server component is healthy.</span></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-contract="3"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">04</span><strong><code class="mono">curl -i</code> against API</strong><p>Status line, response headers, body.</p></div>
-            <div class="contract-face contract-back"><strong>Supports: direct reachability and HTTP response from that command's network location.</strong><span class="cannot">Cannot prove alone: browser CORS behavior or React rendering.</span></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-contract="4"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">05</span><strong>FastAPI process terminal</strong><p>Request/exception logs at the configured level.</p></div>
-            <div class="contract-face contract-back"><strong>Supports: evidence the process received/handled a request or raised.</strong><span class="cannot">Cannot prove alone: requests never logged, or upstream browser behavior.</span></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-contract="5"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">06</span><strong>Source/config files</strong><p>URL constants, origin allowlist, route declarations.</p></div>
-            <div class="contract-face contract-back"><strong>Supports: intended configuration.</strong><span class="cannot">Cannot prove alone: effective running configuration if overrides or stale process state exist.</span></div>
-          </div></button>
-        </div>
-        <p id="instrument-status" class="lab-status" role="status" aria-live="polite" style="margin-top:28px;"><strong>0 of 6 reviewed.</strong> Flip every card — no single instrument settles the question alone.</p>
-      </div>
-      <a class="next-peek" href="#failures"><span>Next</span><strong>Three failures that look identical ↓</strong></a>
-    </section>
-
-    <section id="failures">
-      <div class="section-inner">
-        <p class="eyebrow">Compare Three Failures That Can Look Alike</p>
-        <h2>Same user-visible message. Three different root causes.</h2>
-        <p class="lead">Click each failure to see the discriminating evidence that tells them apart — and the fix that corresponds to it.</p>
-        <div id="failure-board" class="evidence-grid" role="group" aria-label="Three failures with the same symptom; click each to see discriminating evidence">
-          <button class="evidence-card" type="button" data-evidence="target" aria-pressed="false"><span class="tag">A / Wrong API Target</span><strong>Status card says it can't fetch.</strong><p>A request went to the wrong port, host, or failed at the network level.</p><span class="reveal-note"><strong>Evidence:</strong> Network tab shows the wrong target; a direct curl to the known-good URL succeeds; the API log may show nothing because the browser targeted elsewhere.</span><span class="reveal-note"><strong>Fix:</strong> correct the configured API URL, rebuild/restart if read at build time, repeat both tests.</span><span class="reveal-note caution">Don't assume "no API log" alone proves no traffic arrived — confirm log completeness and the actual target first.</span></button>
-          <button class="evidence-card" type="button" data-evidence="stopped" aria-pressed="false"><span class="tag">B / API Process Stopped</span><strong>Same client message.</strong><p>The backend process itself is not running.</p><span class="reveal-note"><strong>Evidence:</strong> a direct curl to the expected URL gets connection refused or times out; the API terminal shows the process stopped or never started.</span><span class="reveal-note"><strong>Fix:</strong> understand why it stopped, restart in a controlled way, repeat health + route + browser checks.</span><span class="reveal-note caution">Don't treat a restart as root-cause analysis — if it exits again, read the logs and exit condition.</span></button>
-          <button class="evidence-card" type="button" data-evidence="cors" aria-pressed="false"><span class="tag">C / CORS Origin Mismatch</span><strong>Browser reports a policy error.</strong><p>curl may succeed even though the browser is blocked.</p><span class="reveal-note"><strong>Evidence:</strong> Network/Console shows a cross-origin request; the response lacks the correct <code class="mono">Access-Control-Allow-Origin</code> for the actual browser origin; the API log may show it received the request.</span><span class="reveal-note"><strong>Fix:</strong> configure the smallest intended dev origin allowlist, restart the API if settings load at startup, retry from the exact frontend origin.</span><span class="reveal-note caution">Never disable browser security or broaden the allowlist as a shortcut — CORS is not authentication.</span></button>
-        </div>
-        <p id="failure-status" class="lab-status evidence-status" role="status" aria-live="polite"><strong>Static read:</strong> Open all three to see how one UI message hides three distinct boundaries.</p>
-      </div>
-      <a class="next-peek" href="#worksheet"><span>Next</span><strong>Fill a repeatable trace worksheet ↓</strong></a>
-    </section>
-
-    <section id="worksheet">
-      <div class="section-inner">
-        <p class="eyebrow">A Repeatable Trace Worksheet</p>
-        <h2>For one click, record every field.</h2>
-        <p class="lead">Type into the fields as you trace a real request. Nothing here is graded or sent anywhere — it's scratch space for the habit.</p>
-        <article class="lab-shell" aria-labelledby="worksheet-title">
-          <div class="lab-heading"><div><p class="eyebrow">Trace Worksheet</p><h3 id="worksheet-title">Don't write "root cause" yet</h3></div><p>Fill the fields in order. Write a hypothesis only after you have evidence that distinguishes it from the alternatives.</p></div>
-          <div id="worksheet-grid" class="worksheet-grid">
-            <div class="worksheet-field"><label for="w1">Frontend URL opened</label><input id="w1" type="text" placeholder="http://127.0.0.1:5173"></div>
-            <div class="worksheet-field"><label for="w2">Browser origin</label><input id="w2" type="text" placeholder="scheme + host + port"></div>
-            <div class="worksheet-field"><label for="w3">Expected API URL</label><input id="w3" type="text" placeholder="http://127.0.0.1:8000/api/status"></div>
-            <div class="worksheet-field"><label for="w4">Actual API URL in Network tab</label><input id="w4" type="text"></div>
-            <div class="worksheet-field"><label for="w5">HTTP method and path</label><input id="w5" type="text" placeholder="GET /api/status"></div>
-            <div class="worksheet-field"><label for="w6">Browser result / status</label><input id="w6" type="text"></div>
-            <div class="worksheet-field"><label for="w7">Response status + Access-Control-Allow-Origin</label><input id="w7" type="text"></div>
-            <div class="worksheet-field"><label for="w8">Direct curl -i result</label><input id="w8" type="text"></div>
-            <div class="worksheet-field"><label for="w9">API log observation + limitations</label><input id="w9" type="text"></div>
-            <div class="worksheet-field"><label for="w10">First boundary where expectation and evidence diverge</label><input id="w10" type="text"></div>
-            <div class="worksheet-field"><label for="w11">Current hypothesis (not yet root cause)</label><input id="w11" type="text"></div>
-            <div class="worksheet-field"><label for="w12">Test that would falsify this hypothesis</label><input id="w12" type="text"></div>
-          </div>
-          <div class="lab-controls"><button id="worksheet-clear" type="button">Clear worksheet</button></div>
-          <p id="worksheet-status" class="lab-status" role="status" aria-live="polite"><strong>0 of 12 fields filled.</strong> A root cause is only a confirmed hypothesis, not the first guess.</p>
-        </article>
-      </div>
-      <a class="next-peek" href="#localhost"><span>Next</span><strong>Why "localhost" lies ↓</strong></a>
-    </section>
-
-    <section id="localhost">
-      <div class="section-inner">
-        <p class="eyebrow">Why <code class="mono">localhost</code> Is Context-Dependent</p>
-        <h2>The same word means a different machine every time.</h2>
-        <p class="lead"><code class="mono">localhost</code> refers to the loopback interface of whichever machine or network namespace resolves it. Select a context to see what it actually points to there.</p>
-        <div id="localhost-rail" class="stage-rail cols-3" role="group" aria-label="Four execution contexts for localhost">
-          <button class="stage-step" type="button" data-ctx="browser" aria-pressed="true"><span class="idx">A</span><strong>Browser tab</strong><span>On the developer's own machine</span></button>
-          <button class="stage-step" type="button" data-ctx="container" aria-pressed="false"><span class="idx">B</span><strong>Docker container</strong><span>Its own network namespace</span></button>
-          <button class="stage-step" type="button" data-ctx="vm" aria-pressed="false"><span class="idx">C</span><strong>Remote VM</strong><span>A terminal session elsewhere</span></button>
-          <button class="stage-step" type="button" data-ctx="pod" aria-pressed="false"><span class="idx">D</span><strong>Kubernetes Pod</strong><span>Shared only within the Pod</span></button>
-        </div>
-        <div id="localhost-detail" class="stage-detail" role="region" aria-live="polite" aria-label="Selected context detail"></div>
-        <blockquote>Network names are relative to the caller's execution context. Verify from the location that actually initiates the connection.</blockquote>
-      </div>
-      <a class="next-peek" href="#practice"><span>Next</span><strong>Repair the flawed exit statement ↓</strong></a>
-    </section>
-
-    <section id="practice">
-      <div class="section-inner">
-        <p class="eyebrow">Exit Check · Repair The Statement</p>
-        <h2>A learner says: "curl returns HTTP 200, so the frontend is working."</h2>
-        <ul class="evidence-list">
-          <li>curl was run from the learner's own terminal, not the browser.</li>
-          <li>The status card in the UI still shows an error.</li>
-          <li>No one has checked the browser's Network tab yet.</li>
-        </ul>
-        <div id="quiz" class="quiz-grid" role="group" aria-label="Four candidate repaired statements">
-          <button class="quiz-option" type="button" data-choice="A"><span class="letter">A</span><p>This proves the whole system works, since curl succeeded.</p></button>
-          <button class="quiz-option" type="button" data-choice="B"><span class="letter">B</span><p>The API route returned HTTP 200 to curl from that command's environment. I still need to verify the browser calls the expected URL, the response is allowed by browser policy, React handles its status/body, and the requested UI outcome appears.</p></button>
-          <button class="quiz-option" type="button" data-choice="C"><span class="letter">C</span><p>I should restart the frontend, since curl worked but the UI didn't.</p></button>
-          <button class="quiz-option" type="button" data-choice="D"><span class="letter">D</span><p>CORS must be misconfigured, so I'll allow all origins to be safe.</p></button>
-        </div>
-        <p id="quiz-status" class="lab-status" role="status" aria-live="polite"><strong>Pick an option above.</strong> Look for the one that scopes the claim to exactly what curl proved.</p>
-      </div>
-      <a class="next-peek" href="#takeaways"><span>Next</span><strong>Takeaways and sources ↓</strong></a>
-    </section>
-
-    <section id="takeaways">
-      <div class="section-inner">
-        <p class="eyebrow">Key Takeaways</p>
-        <h2>One UI message, many possible boundaries.</h2>
-        <ul class="takeaway-list">
-          <li><strong>Two servers, two requests.</strong> The HTML/JS load and the API fetch are independent — one succeeding says nothing about the other.</li>
-          <li><strong>Each instrument has a scope.</strong> Address bar, Network, Console, curl, server logs, and source files each prove a different slice.</li>
-          <li><strong>Status ≠ correctness.</strong> <code class="mono">fetch()</code> resolves even on 404/500 — application code must check <code class="mono">response.ok</code>.</li>
-          <li><strong>CORS is a read policy, not auth.</strong> A request can reach the server while the browser is still blocked from reading the response.</li>
-          <li><strong>Same symptom, different causes.</strong> Wrong target, stopped process, and CORS mismatch all look identical from the UI.</li>
-          <li><strong><code class="mono">localhost</code> is relative.</strong> Always verify from the exact process that initiates the connection.</li>
-        </ul>
-      </div>
-      <a class="next-peek" href="#sources"><span>Next</span><strong>Sources ↓</strong></a>
-    </section>
-
-    <section id="sources">
-      <div class="section-inner">
-        <p class="eyebrow">Sources</p>
-        <h2>What this lesson draws on.</h2>
-        <div class="sources">
-          <ul>
-            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview">MDN — Overview of HTTP</a> (client/server request flow)</li>
-            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages">MDN — HTTP messages</a> (status, headers, message bodies)</li>
-            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS">MDN — Cross-Origin Resource Sharing</a> (browser policy, preflight behavior)</li>
-            <li><a href="https://fastapi.tiangolo.com/tutorial/first-steps/">FastAPI — First Steps</a> (path operations, JSON responses)</li>
-            <li><a href="https://fastapi.tiangolo.com/tutorial/cors/">FastAPI — CORS</a> (framework configuration, origins)</li>
-            <li><a href="https://sre.google/sre-book/monitoring-distributed-systems/">Google SRE — Monitoring Distributed Systems</a> (external and internal signals in layered systems)</li>
-          </ul>
-        </div>
-        <div class="ledger-wrap">
-          <h3>Diagnostic Instrument Reference</h3>
-          <table>
-            <thead><tr><th>Instrument</th><th>Supports</th><th>Cannot prove alone</th></tr></thead>
-            <tbody>
-              <tr><td data-label="Instrument">Browser address bar</td><td data-label="Supports">Which frontend URL was opened</td><td data-label="Cannot prove alone">API reachability</td></tr>
-              <tr><td data-label="Instrument">DevTools → Network</td><td data-label="Supports">Browser attempt + network-level result</td><td data-label="Cannot prove alone">Backend internal reason without server evidence</td></tr>
-              <tr><td data-label="Instrument">DevTools → Console</td><td data-label="Supports">Client-side exceptions, CORS diagnostics</td><td data-label="Cannot prove alone">Every server component is healthy</td></tr>
-              <tr><td data-label="Instrument">curl -i against API</td><td data-label="Supports">Direct reachability and HTTP response</td><td data-label="Cannot prove alone">Browser CORS behavior or React rendering</td></tr>
-              <tr><td data-label="Instrument">FastAPI process terminal</td><td data-label="Supports">Process received/handled a request</td><td data-label="Cannot prove alone">Unlogged requests or upstream browser behavior</td></tr>
-              <tr><td data-label="Instrument">Source/config files</td><td data-label="Supports">Intended configuration</td><td data-label="Cannot prove alone">Effective running configuration</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="footer-inner"><span>GRO-L02 · Trace the Full-Stack Request</span><span>Week 1 · GroundOps</span></div>
-    <nav class="lesson-pager" aria-label="Lesson navigation">
-      <a href="GRO-L01-human-infrastructure-layer.html"><span class="pager-dir">&larr; Previous</span><span class="pager-title">GRO-L01 · The Human Infrastructure Layer</span></a>
-      <a class="pager-next" href="GRO-L03-evidence-first-operations.html"><span class="pager-dir">Next &rarr;</span><span class="pager-title">GRO-L03 · Evidence-First Operations</span></a>
-    </nav>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-  <script>
-    /* ---------- Six-step walk ---------- */
-    const stageDetails = {
-      load: { title: 'Frontend Load', body: 'The browser navigates to the Vite dev server. It receives HTML plus JS/CSS references, executes the JavaScript, and React builds the UI inside the page root.', example: 'Proves: the frontend server served enough assets to render the page. Does not prove: the API is running, the API URL is correct, or a later API request will succeed.' },
-      fetch: { title: 'React Fetch', body: 'On "Check API", the React handler calls fetch() against an explicit scheme, host, port, and path. Each element is its own possible fault boundary.', example: 'A wrong scheme can cause mixed-content/TLS failures. A wrong host points at a different machine. A wrong port points at no listener. A wrong path reaches the server but returns 404.' },
-      api: { title: 'API Boundary', body: 'The ASGI server receives the HTTP request and routes it to the matching operation if the listener, network path, method, and route are all configured correctly.', example: 'Proves (direct curl): the caller reached a server that handled this route at that moment. Does not prove: the browser uses the same target or will accept the response.' },
-      status: { title: 'Status & Body', body: 'HTTP status communicates the result at the HTTP layer — 200 is not semantic correctness, 404 may mean a reachable server lacks the route, 500 means an internal failure.', example: 'fetch() normally resolves even on 404/500. Application code must check response.ok — otherwise it can try to parse an error response as if it were success.' },
-      cors: { title: 'Browser CORS', body: 'CORS is a browser-enforced policy using HTTP headers; the server tells the browser which origins may read a response. Some cross-origin requests need an OPTIONS preflight first.', example: 'CORS is not authentication. A request can reach the server while browser JavaScript is still prevented from reading the response — and curl does not enforce this policy at all.' },
-      render: { title: 'React Renders', body: 'React shows the API message, an error state, or stays stuck loading. The user outcome is the final boundary: rendered without a runtime error, the right request made, the right response read, and a useful failure state if something breaks.', example: 'This end-to-end assertion is stronger than "the frontend started" plus "the backend started."' }
-    };
-    function renderStage(key) {
-      const d = stageDetails[key];
-      document.querySelectorAll('#stage-rail .stage-step').forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.stage === key)));
-      document.querySelector('#stage-detail').innerHTML = `<h3>${d.title}</h3><p>${d.body}</p><div class="example">${d.example}</div>`;
-    }
-    document.querySelectorAll('#stage-rail .stage-step').forEach((btn) => btn.addEventListener('click', () => renderStage(btn.dataset.stage)));
-    renderStage('load');
-
-    /* ---------- Instrument flip cards ---------- */
-    document.querySelectorAll('#instrument-grid .contract-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        card.setAttribute('aria-pressed', String(card.getAttribute('aria-pressed') !== 'true'));
-        card.dataset.everOpened = '1';
-        const seen = document.querySelectorAll('#instrument-grid .contract-card[data-ever-opened="1"]').length;
-        document.querySelector('#instrument-status').innerHTML = seen === 6
-          ? '<strong>6 of 6 reviewed.</strong> No single instrument settles the question alone — combine at least two before concluding a root cause.'
-          : `<strong>${seen} of 6 reviewed.</strong> Flip every card — no single instrument settles the question alone.`;
-      });
-    });
-
-    /* ---------- Failure comparison board ---------- */
-    document.querySelectorAll('#failure-board .evidence-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        const pressed = card.getAttribute('aria-pressed') === 'true';
-        card.setAttribute('aria-pressed', String(!pressed));
-        const openCount = document.querySelectorAll('#failure-board .evidence-card[aria-pressed="true"]').length;
-        document.querySelector('#failure-status').innerHTML = openCount === 3
-          ? '<strong>All three opened:</strong> Same UI message, three different first-divergence points. Diagnostics narrow a hypothesis by finding where observed behavior first differs from expectation.'
-          : `<strong>${openCount} of 3 opened:</strong> Keep opening failures to compare their discriminating evidence.`;
-      });
-    });
-
-    /* ---------- Worksheet ---------- */
-    const worksheetInputs = [...document.querySelectorAll('#worksheet-grid input')];
-    function renderWorksheet() {
-      const filled = worksheetInputs.filter((i) => i.value.trim().length > 0).length;
-      document.querySelector('#worksheet-status').innerHTML = filled === worksheetInputs.length
-        ? '<strong>12 of 12 fields filled.</strong> Only now does "current hypothesis" earn the word root cause — if the falsifying test confirms it.'
-        : `<strong>${filled} of ${worksheetInputs.length} fields filled.</strong> A root cause is only a confirmed hypothesis, not the first guess.`;
-    }
-    worksheetInputs.forEach((input) => input.addEventListener('input', renderWorksheet));
-    document.querySelector('#worksheet-clear').addEventListener('click', () => { worksheetInputs.forEach((i) => i.value = ''); renderWorksheet(); });
-    renderWorksheet();
-
-    /* ---------- localhost contexts ---------- */
-    const localhostDetails = {
-      browser: { title: 'Browser tab', body: 'A browser tab resolves localhost to the loopback interface of the machine the browser itself is running on — typically the developer\u2019s own laptop.', example: 'If the API only listens inside a container or remote VM, the browser\u2019s localhost will not reach it.' },
-      container: { title: 'Docker container', body: 'A container has its own network namespace. Inside it, localhost refers to the container\u2019s own loopback, not the host machine\u2019s.', example: 'A process inside the container cannot reach a server bound to the host\u2019s localhost by using localhost itself.' },
-      vm: { title: 'Remote VM', body: 'A terminal session on a remote VM resolves localhost to that VM\u2019s loopback interface, not the machine you are typing on.', example: 'curl localhost:8000 from an SSH session tests the VM, not your laptop.' },
-      pod: { title: 'Kubernetes Pod', body: 'Each Pod gets its own network namespace. Inside a Pod, localhost refers to that Pod\u2019s loopback, shared only by containers within the same Pod.', example: 'Two containers in the same Pod can reach each other over localhost; a container in a different Pod cannot.' }
-    };
-    function renderLocalhost(key) {
-      const d = localhostDetails[key];
-      document.querySelectorAll('#localhost-rail .stage-step').forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.ctx === key)));
-      document.querySelector('#localhost-detail').innerHTML = `<h3>${d.title}</h3><p>${d.body}</p><div class="example">${d.example}</div>`;
-    }
-    document.querySelectorAll('#localhost-rail .stage-step').forEach((btn) => btn.addEventListener('click', () => renderLocalhost(btn.dataset.ctx)));
-    renderLocalhost('browser');
-
-    /* ---------- Quiz ---------- */
-    const quizAnswer = 'B';
-    let quizAnswered = false;
-    document.querySelectorAll('#quiz .quiz-option').forEach((opt) => opt.addEventListener('click', () => {
-      if (quizAnswered) return;
-      quizAnswered = true;
-      document.querySelectorAll('#quiz .quiz-option').forEach((o) => {
-        o.disabled = true;
-        o.setAttribute('data-result', o.dataset.choice === quizAnswer ? 'correct' : (o === opt ? 'incorrect' : ''));
-      });
-      document.querySelector('#quiz-status').innerHTML = opt.dataset.choice === quizAnswer
-        ? '<strong>Correct — B.</strong> It scopes the claim to exactly what curl proved, and names every remaining check: browser target, browser policy, response handling, and UI outcome.'
-        : '<strong>Not quite.</strong> The strong repair is B — it scopes curl\u2019s result to its own environment and lists what still needs verifying, instead of overclaiming or jumping to an intervention.';
-    }));
-
-    /* ---------- Reading progress + active nav ---------- */
-    const progress = document.querySelector('#reading-progress');
-    const navLinks = [...document.querySelectorAll('.nav-links a[href^="#"]')];
-    const navTargets = navLinks.map((link) => document.querySelector(link.hash)).filter(Boolean);
-    function setCurrentSection(id) {
-      navLinks.forEach((link) => link.hash === `#${id}` ? link.setAttribute('aria-current', 'location') : link.removeAttribute('aria-current'));
-    }
-    function updateProgress() {
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-      const depth = scrollable <= 0 ? 1 : Math.min(1, Math.max(0, window.scrollY / scrollable));
-      progress.style.width = `${depth * 100}%`;
-      const line = window.scrollY + window.innerHeight * .32;
-      const active = navTargets.filter((s) => s.offsetTop <= line).at(-1) || navTargets[0];
-      setCurrentSection(active.id);
-    }
-    setCurrentSection(navTargets[0]?.id);
-    updateProgress();
-    window.addEventListener('scroll', updateProgress, { passive: true });
-    window.addEventListener('resize', updateProgress, { passive: true });
-
-    /* ---------- Motion: reveal + cursor light ---------- */
-    document.documentElement.classList.add('js-enhanced');
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const revealTargets = [...document.querySelectorAll('main > section .section-inner > h2, main > section .section-inner > .lead, .flow-diagram, .stage-rail, .contract-grid, .evidence-grid, .lab-shell, .quiz-grid, .takeaway-list, .ledger-wrap')];
-    revealTargets.forEach((el) => el.classList.add('reveal'));
-    let cursorLight;
-    function enableCursorLight() {
-      if (!finePointer.matches || reduceMotion.matches || cursorLight) return;
-      cursorLight = document.createElement('div');
-      cursorLight.className = 'cursor-light';
-      cursorLight.setAttribute('aria-hidden', 'true');
-      document.body.append(cursorLight);
-      window.addEventListener('pointermove', (e) => { if (cursorLight) cursorLight.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate3d(-50%, -50%, 0)`; }, { passive: true });
-    }
-    function revealAll() { revealTargets.forEach((el) => el.classList.add('in')); }
-    function configureMotion() {
-      if (reduceMotion.matches) { revealAll(); return; }
-      enableCursorLight();
-      if (typeof window.gsap === 'object' && typeof window.ScrollTrigger === 'function') {
-        window.gsap.registerPlugin(window.ScrollTrigger);
-        revealTargets.forEach((el) => window.gsap.fromTo(el, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: .7, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%', once: true } }));
-      } else if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries, obs) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add('in'); obs.unobserve(entry.target); } }), { rootMargin: '0px 0px -8%', threshold: .08 });
-        revealTargets.forEach((el) => observer.observe(el));
-      } else revealAll();
-    }
-    configureMotion();
-    reduceMotion.addEventListener?.('change', configureMotion);
-  </script>
+<div class="reading-progress" id="progress" aria-hidden="true"></div>
+<header class="nav"><div class="wrap nav-inner"><a class="brand" href="#top">VOIDINFINITY <span>×</span> GROUNDOPS / L02</a><nav class="navlinks" aria-label="Lesson navigation"><a href="#start">Start here</a><a href="#walk">Request walk</a><a href="#evidence">Instruments</a><a href="#failures">Three failures</a><a href="#worksheet">Worksheet</a><a href="#at-scale">At scale</a><a href="#practice">Practice</a><a href="#glossary">Glossary</a></nav></div></header>
+<header class="hero" id="top"><div class="wrap"><p class="eyebrow">GroundOps · Lesson 02 · Trace the request</p><h1>The page renders. The data card still <em>fails.</em></h1><p class="lead">You can see Check API. Its action fails. GRO-L01 separated a running part from a working outcome; now locate the first boundary whose evidence differs from expectation.</p>
+<div class="wrap learning-note" id="opening-prediction"><p class="eyebrow">Pause &amp; predict</p><p>Predict what happens if the API stops but the program serving page files stays running. Could the button remain visible while its action fails? Give a reason before opening the explanation.</p><details><summary>Compare your reasoning</summary><p>The page files and API data arrive on separate requests to separate programs. Vite serves the frontend files; the browser runs React and later asks FastAPI for data. A visible button does not establish that second exchange, and a failed API call does not prove Vite failed.</p></details><p><strong>55 teaching minutes · draft.</strong> Core: prediction, request walk, CORS comparison, instruments and transfer. Scale cases are extension/reference reading, not extra timed lab work. Novice timing remains unmeasured.</p><p><strong>Interaction scope:</strong> cards reveal authored explanations; this is not a runtime test or a network simulator. Worksheets count entries, not correct diagnoses. Notes stay only in the page, are not sent or saved, and disappear on reload; use Clear worksheet or reset quizzes to start again.</p><noscript><p>JavaScript is disabled. The <a href="../../week-01-groundops/lessons/GRO-L02-trace-the-full-stack-request.md">source lesson</a> preserves all core explanations, worked cases and questions. Native disclosures still work; scripted cards and counts do not. Copy worksheet observations into your own notes.</p></noscript></div>
+<div class="note"><strong>The key question for this lesson:</strong><p>Where did the request stop, and what evidence identifies that boundary? No programming or terminal experience is required. The source lesson and glossary explain the vocabulary.</p></div><div class="promise"><article><strong>01 · Walk the request</strong><p>Follow one click from the browser to the API and back to the screen, distinguishing page files from API data.</p></article><article><strong>02 · Know your instruments</strong><p>Learn what the address bar, DevTools, curl, server logs, and config files can prove—and what each cannot.</p></article><article><strong>03 · Separate look-alike failures</strong><p>Tell a wrong target, a stopped process, and a CORS mismatch apart, even though the user sees the same message.</p></article></div></div></header>
+<main>
+<div class="wrap learning-note"><h2>Mapped model and its limits</h2><p>A shop directory maps to Vite's page files; following a separate counter address maps to the browser's API request; a numbered counter and named task map to port and method/path; the reply reaching the customer maps to the rendered API result. Seeing the directory does not prove the clerk is available. A counter number is not permission: this analogy does not model CORS or authentication. Return to the actual Origin and response headers for browser read policy.</p></div>
+<section class="section" id="start"><div class="wrap"><p class="eyebrow">Part 1 · Begin with the real-world promise</p><h2>“The page loads” and “the feature works” are different claims.</h2><p class="section-intro">You open the Week 1 app at <code>http://127.0.0.1:5173</code>. The heading, the layout, and a <strong>Check API</strong> button all appear. You click the button. The status card says it cannot fetch the status. Nothing on the screen tells you which part of the system failed. This lesson is about finding that part with evidence.</p><div class="grid two"><article class="card"><div class="kicker">The promise</div><h3>What the person expects</h3><p>“When I click <strong>Check API</strong>, the app asks the backend for its status and shows me the answer—or tells me clearly that it could not get one.” The user does not care which server delivered which file. They care whether the card shows a true answer.</p></article><article class="card"><div class="kicker">The engineering question</div><h3>What must be true?</h3><p>The browser must have loaded the app. The click handler must send a request to the right scheme, host, port, and path. A process must be listening there. It must route the request and return a status, headers, and a body. The browser must be allowed to let the page read the reply. React must read it correctly and update the card.</p></article></div><div class="note"><strong>First principle:</strong> one visible symptom (“can’t fetch”) can come from several different boundaries. A boundary is a point where work passes from one program, machine, or policy to another. Diagnosis means finding the <em>first</em> boundary where what you observe differs from what you expected.</div><h3>The mystery has three independent boundaries</h3><p class="section-intro">Before we walk the request step by step, see the shape of the problem. The page you see and the data it asks for travel on separate requests, to separate servers, under separate rules.</p><div class="grid three"><article class="card"><div class="kicker">Boundary A</div><h3>Frontend asset load</h3><p>The browser asks the Vite dev server for <code>/</code>. Vite returns HTML that references JavaScript and CSS files; the browser downloads and runs them, and React draws the interface inside the page’s root element. This request goes to port <code>5173</code>.</p></article><article class="card"><div class="kicker">Boundary B</div><h3>Browser → API fetch</h3><p>After the click, JavaScript running in the page calls <code>fetch()</code> against a separate host and port—here <code>http://127.0.0.1:8000/api/status</code>. It is a brand-new HTTP request to a different program. Success at Boundary A says nothing about it.</p></article><article class="card"><div class="kicker">Boundary C</div><h3>Response + browser policy</h3><p>A reply has a status, headers, and a body. Before page code may read a cross-origin reply, the browser checks CORS headers. Then React must check the status and parse the body. Each of these is a separate pass/fail check.</p></article></div><div class="callout-warn"><strong>Two easy over-claims to unlearn right now.</strong> A React screen loading successfully is not evidence the API is reachable—the screen came from Vite, not FastAPI. And FastAPI’s own <code>/docs</code> page working in a browser tab is not evidence that the app’s page can read API responses: opening <code>/docs</code> is a same-origin visit to port 8000, while the app’s fetch is a cross-origin call from port 5173 with its own requirements.</div><h3>Build the vocabulary from everyday language</h3><p class="section-intro">These words appear on every screen of this lesson. Learn the short meaning here; the glossary gives fuller definitions.</p><div class="grid three"><article class="card"><h4>HTTP request / response</h4><p>HTTP is the message format browsers and servers use. A request names a method (such as <code>GET</code>), a path, and headers. A response carries a status code (such as <code>200</code> or <code>404</code>), headers, and often a body.</p></article><article class="card"><h4>Scheme, host, port, path</h4><p>The four parts of a URL that decide where a request goes. In <code>http://127.0.0.1:8000/api/status</code> the scheme is <code>http</code>, the host is <code>127.0.0.1</code>, the port is <code>8000</code>, and the path is <code>/api/status</code>.</p></article><article class="card"><h4>Port</h4><p>A number that lets one machine run many network programs. The operating system delivers a connection for port 8000 to whichever process is <em>listening</em> on 8000. If nothing listens, the connection is refused.</p></article><article class="card"><h4>Origin</h4><p>The combination of scheme, host, and port of a page. <code>http://127.0.0.1:5173</code> and <code>http://127.0.0.1:8000</code> are different origins because their ports differ. Browsers apply security rules per origin.</p></article><article class="card"><h4>Vite dev server</h4><p>A development program that serves your frontend source files to the browser and rebuilds them as you edit. In Week 1 it listens on port 5173, Vite’s default.</p></article><article class="card"><h4>FastAPI / uvicorn</h4><p>FastAPI is a Python framework for writing API routes. It runs inside an ASGI server, usually uvicorn, which owns the network listener—by default <code>127.0.0.1:8000</code>—and hands each request to FastAPI.</p></article></div></div></section>
+<section class="section alt" id="walk"><div class="wrap"><p class="eyebrow">Part 2 · Derive the architecture</p><h2>Six steps from the click to the rendered card.</h2><p class="section-intro">The full journey has two request/response exchanges and several checks between them. Select each step to see what happens, what a success at that step proves, and—just as important—what it does <strong>not</strong> prove. Each step is a separate place the journey can stop.</p>
+<div class="flow trace-flow" role="group" aria-label="Interactive six-step walk of a Check API click"><button class="flowstep" data-flow="0" aria-pressed="true"><strong>1. Frontend load</strong><span>Vite serves assets; React renders.</span></button><button class="flowstep" data-flow="1" aria-pressed="false"><strong>2. React fetch</strong><span>fetch() targets scheme, host, port, path.</span></button><button class="flowstep" data-flow="2" aria-pressed="false"><strong>3. API boundary</strong><span>Uvicorn receives; FastAPI routes method + path.</span></button><button class="flowstep" data-flow="3" aria-pressed="false"><strong>4. Status &amp; body</strong><span>Separate signals in one reply.</span></button><button class="flowstep" data-flow="4" aria-pressed="false"><strong>5. Browser CORS</strong><span>A read policy, not authentication.</span></button><button class="flowstep" data-flow="5" aria-pressed="false"><strong>6. React renders</strong><span>The final user-visible boundary.</span></button></div>
+<div class="detailpanel" id="flow-detail" aria-live="polite"><span class="label">Step 1 · Frontend load</span><h3>The browser loads the frontend</h3><p>The learner navigates to http://127.0.0.1:5173. The Vite dev server returns an HTML document that references JavaScript and CSS. The browser downloads and executes the JavaScript, and React builds the user interface inside the page root element.</p><div class="example"><strong>Example:</strong> Proves: the frontend server served enough assets for the browser to render the page. Does not prove: that the API server is running, that the API URL is correct, or that a later API request will succeed.</div></div>
+<h3 style="margin-top:42px">The same journey as a message sequence</h3><p class="section-intro">Read top to bottom. The browser talks to two different servers and performs a read-policy check distinct from server handling. This is an illustrative sequence, not captured traffic.</p>
+<div class="code trace-code">User → Browser:    open http://127.0.0.1:5173<br>Browser → Vite:    GET /            (HTML, then JS and CSS files)<br>Vite → Browser:    200 OK + HTML / JavaScript / CSS<br>Browser:           execute JavaScript, React renders the page<br>User → Browser:    click "Check API"<br>Browser → API:     GET /api/status  (with Origin: http://127.0.0.1:5173)<br>API:               uvicorn accepts; middleware wraps FastAPI routing and response<br>API → Browser:     HTTP status + headers + JSON body<br>Browser:           apply CORS policy, then hand the response to page code<br>React → User:      show the status message, or an actionable error</div>
+<div class="grid two" style="margin-top:26px"><article class="card"><h3>Why the request target is spelled out</h3><p>The default target is <code>http://127.0.0.1:8000/api/status</code>; configuration can override its base URL. Each part is a fault boundary. A wrong <strong>scheme</strong> can cause TLS or mixed-content failures; loopback has special browser security treatment, so inspect the actual error. A wrong <strong>host</strong> points elsewhere. A wrong <strong>port</strong> may have no listener or another service. A wrong <strong>path</strong> may return <code>404</code> from a reachable server. Later modules examine deployed configuration.</p></article><article class="card"><h3>Why two servers instead of one</h3><p>Vite serves and transforms frontend files during development. FastAPI handles Python API operations inside Uvicorn, the listener-owning server. ASGI is their request-handling interface. Two processes on different ports create a cross-origin boundary. If the page and API shared an origin, CORS permission would not be needed for that read; this would not remove authentication requirements.</p></article></div>
+<h3 style="margin-top:42px">What the API actually returns</h3><p class="section-intro">FastAPI maps method and path to a Python function, called a <strong>path operation</strong>. Here its dictionary becomes JSON: named fields with values. The supplied <code>GET /api/status</code> handler returns these exact values:</p>
+<div class="code">{<br>&nbsp;&nbsp;"service": "groundops-api",<br>&nbsp;&nbsp;"status": "available",<br>&nbsp;&nbsp;"message": "The browser reached the FastAPI endpoint.",<br>&nbsp;&nbsp;"version": "0.1.0"<br>}</div>
+<p style="margin-top:18px" class="small">Service names the app; status is declared status text; message is display text; version is an application label, not a unique source revision. The fixed message says “browser” even when curl calls the route. It does not identify the caller or prove a browser run. We make no production capacity, authentication or availability guarantee.</p>
+<div class="note"><strong>Keep this mental picture:</strong> the six steps expose independent failure boundaries. Success at an earlier step does not automatically establish a later one; choose evidence matching the claim.</div></div></section>
+<section class="section" id="evidence"><div class="wrap"><p class="eyebrow">Part 3 · The incident and its instruments</p><h2>Six instruments. Six different scopes.</h2><p class="section-intro">Here is the incident. The page renders. The <strong>Check API</strong> button produces “Could not fetch status.” A teammate says, “the API is fine, I just curled it.” Someone else says, “restart everything.” Neither statement is a diagnosis yet. To find the boundary, you need instruments—and you need to know exactly what each one can see.</p><p>First, decode the tools you will use:</p><div class="grid three"><article class="card"><h4>DevTools</h4><p>Developer tools built into the browser (open with F12, or Cmd+Option+I on a Mac). They show what the browser itself did: requests sent, responses received, and errors raised.</p></article><article class="card"><h4>Network panel</h4><p>The DevTools tab that records every request the page makes, with its URL, method, status, timing, request and response headers, and body where available. It only records while DevTools is open.</p></article><article class="card"><h4>Console panel</h4><p>The DevTools tab that shows JavaScript errors and browser messages—including the CORS explanation that page code itself is not allowed to see.</p></article><article class="card"><h4>curl</h4><p>A command-line HTTP client. <code>curl -i URL</code> sends a request and prints the status line and response headers (<code>-i</code> means “include headers”) before the body. It is not a browser and enforces no CORS policy.</p></article><article class="card"><h4>Server terminal / log</h4><p>The terminal where uvicorn runs prints a line for each request it handles and a traceback for unhandled exceptions—at the configured log level only.</p></article><article class="card"><h4>Source and config</h4><p>The files that declare intent: the API URL constant or <code>VITE_</code> variable in the frontend, the CORS origin allowlist and route declarations in the backend.</p></article></div><h3 style="margin-top:42px">Open each instrument: what does it support, and what can it not prove alone?</h3><p class="small">Select every card. The label tells you the instrument; the hidden line tells you the limit of its scope.</p><div class="evidence-grid" id="evidence-board"><button class="evidence" aria-pressed="false"><span class="tag">Instrument 01 · Address bar</span><strong>Supports: which frontend URL was opened.</strong><p>Shows the exact scheme, host, port, and path of the page—and therefore the page’s origin.</p><span class="reveal">Cannot prove alone: API reachability. The address bar describes the page, not any request the page makes afterwards.</span></button><button class="evidence" aria-pressed="false"><span class="tag">Instrument 02 · DevTools Network</span><strong>Supports: whether the browser attempted the call, and its network-level result.</strong><p>Request URL, method, status, timing, and request/response headers and body where available.</p><span class="reveal">Cannot prove alone: the backend’s internal reason for a failure. A <code>500</code> tells you the server failed; only server evidence tells you why.</span></button><button class="evidence" aria-pressed="false"><span class="tag">Instrument 03 · DevTools Console</span><strong>Supports: client-side exceptions and visible CORS diagnostics.</strong><p>JavaScript errors, unhandled promise rejections, and browser policy messages.</p><span class="reveal">Cannot prove alone: that every server component is healthy. A clean console only means the browser had nothing to complain about.</span></button><button class="evidence" aria-pressed="false"><span class="tag">Instrument 04 · curl -i</span><strong>Supports: direct reachability and the HTTP response from that command’s location.</strong><p>Status line, response headers, and body, exactly as the server sent them.</p><span class="reveal">Cannot prove alone: browser CORS behaviour or React rendering. curl runs from your terminal’s network position, not the browser’s, and ignores CORS.</span></button><button class="evidence" aria-pressed="false"><span class="tag">Instrument 05 · FastAPI terminal</span><strong>Supports: evidence the process received and handled a request, or raised.</strong><p>Access lines and exception tracebacks at the configured log level.</p><span class="reveal">Cannot prove alone: requests that were never logged, or anything the browser did upstream. Silence is weak evidence until you know logging was complete.</span></button><button class="evidence" aria-pressed="false"><span class="tag">Instrument 06 · Source / config</span><strong>Supports: intended configuration.</strong><p>URL constants, origin allowlists, and route declarations as written.</p><span class="reveal">Cannot prove alone: the effective running configuration. Environment overrides, a missed restart, or a stale build can make the running process differ from the file.</span></button></div><p class="status" id="evidence-status" role="status"><strong>0 of 6 opened.</strong> Select every instrument card. Notice that no single instrument can tell you where the request stopped on its own.</p><div class="callout-warn"><strong>Important reasoning rule:</strong> every instrument observes from one position at one moment. Before you trust a reading, ask: <em>who made this request, from where, to which URL, and what is this tool able to see?</em> “I curled it and it worked” answers a question about your terminal, not about the user’s browser.</div><h3 style="margin-top:42px">How each instrument works inside</h3><div class="grid two"><article class="card"><div class="kicker">Inside the Network panel</div><h3>A recorder, not a probe</h3><p>The Network panel does not send anything itself. It records the requests the page makes while DevTools is open, so you must open it <em>before</em> clicking. An empty list can mean the code never called fetch, the request was filtered out by the panel’s filters, or recording started too late. Chrome shows a blocked cross-origin request with the status <strong>CORS error</strong> and a refused connection as <strong>(failed)</strong> with <code>net::ERR_CONNECTION_REFUSED</code>.</p></article><article class="card"><div class="kicker">Inside curl</div><h3>A different caller in a different place</h3><p>curl resolves the host name, opens a TCP connection, sends the request, and prints what comes back. It runs wherever your shell runs: your laptop, a container, or a remote VM over SSH. That makes it an excellent test of “can <em>this</em> location reach the server?” and a poor test of “can the user’s browser read the reply?”—curl sends no <code>Origin</code> header unless you add one, and never blocks a response for CORS reasons.</p></article><article class="card"><div class="kicker">Inside the server log</div><h3>Evidence written by the process itself</h3><p>uvicorn prints an access line such as <code>INFO: 127.0.0.1:54321 - "GET /api/status HTTP/1.1" 200 OK</code> after it handles a request. The line proves the request reached <em>this</em> process. Its absence is weaker: access logging may be disabled or set to a higher log level, output may go to another terminal, or the request may have gone to a different process entirely.</p></article><article class="card"><div class="kicker">Inside config files</div><h3>Intended state, not observed state</h3><p>A config file is what you asked for. The running process uses what it loaded when it started. Vite reads <code>.env</code> files at startup and replaces <code>import.meta.env.VITE_*</code> references in client code, so editing <code>.env</code> without restarting the dev server leaves the old value in effect. FastAPI’s CORS middleware is configured when the app object is created, so allowlist changes need an API restart too.</p></article></div><div class="note"><strong>Combine signals from both sides.</strong> Google’s SRE book recommends combining external <em>symptom</em> signals with internal <em>cause</em> signals, especially in layered systems. A slow or failing request is a symptom for the frontend owner and a clue about a dependency for the API owner. The browser instruments show the symptom; the server instruments show the cause.</div></div></section>
+<section class="section alt" id="failures"><div class="wrap"><p class="eyebrow">Part 4 · Three failures that look alike</p><h2>Same user-visible message. Three different failure boundaries.</h2><p class="section-intro">These controlled lab cases can all reach the page's Request failed state. Compare their actual destinations, listener evidence and browser permissions, not just the error wording. Select each case and then the healthy baseline.</p>
+<div class="fourstage" role="group" aria-label="Select a failure to compare"><button data-stage="target" aria-pressed="true"><span class="number">FAILURE A</span><strong>Wrong API target</strong><span>The browser called somewhere else.</span></button><button data-stage="stopped" aria-pressed="false"><span class="number">FAILURE B</span><strong>API process stopped</strong><span>The intended listener is unavailable.</span></button><button data-stage="cors" aria-pressed="false"><span class="number">FAILURE C</span><strong>CORS origin mismatch</strong><span>Page code cannot read the reply.</span></button><button data-stage="baseline" aria-pressed="false"><span class="number">BASELINE</span><strong>Healthy trace</strong><span>Compare the expected readings.</span></button></div>
+<div class="detailpanel" id="stage-detail" aria-live="polite"><span class="label">Failure A · Wrong API target</span><h3>Wrong API target</h3><p>Network shows the browser's actual URL differs from the intended API URL; a direct check of the intended route succeeds. Correct only the supported configuration mismatch, reload it as required, then repeat both direct and browser checks.</p><div class="example"><strong>Example:</strong> no API log alone does not prove no arrival; check logging coverage, target and time.</div></div>
+<div class="grid three" style="margin-top:22px"><article class="card"><div class="kicker">A · Wrong API target</div><h3>First divergence: request URL</h3><p><strong>Evidence:</strong> the browser targets port 8001 while the intended route answers at 8000. With no listener at 8001, the connection fails.</p><p><strong>Correction:</strong> fix the effective base URL, restart Vite when needed, reload and verify the original action. If another service answers on the wrong port, save that different result rather than calling it the intended experiment.</p></article>
+<article class="card"><div class="kicker">B · Stopped API</div><h3>First divergence: listener</h3><p><strong>Evidence:</strong> the intended target remains correct, the process is stopped and the direct request cannot connect. A timeout alone does not prove the process stopped; it needs corroboration.</p><p><strong>Correction:</strong> restore the API under the lab procedure and verify health, route and browser. Outside the deliberate experiment, investigate why it stopped rather than naming restart as the cause.</p></article>
+<article class="card"><div class="kicker">C · Disallowed browser origin</div><h3>First divergence: read policy</h3><p><strong>Evidence:</strong> this simple GET can arrive and return 200, but the response has no allow-origin header for the actual page origin. Console provides the policy diagnostic; curl may print the body.</p><p><strong>Correction:</strong> restore the smallest intended allowlist, restart the API and repeat from the original page origin. Do not disable browser security or treat CORS as authentication.</p></article></div>
+<div class="grid two" style="margin-top:22px"><article class="card"><h3>Why the page message is insufficient</h3><p>Connection failures and CORS failures can both reject fetch with a generic TypeError. Page code does not receive the detailed CORS failure explanation; use Console and corresponding network/server evidence. This does not mean browsers reveal no information through any possible side channel, nor that every fetch rejection has the same cause.</p></article>
+<article class="card"><h3>Origin is a parsed tuple, not the whole typed URL</h3><p>For these HTTP(S) pages, origin is the normalized scheme, host and effective port. URL parsing handles case and default ports; paths are excluded. Localhost and 127.0.0.1 remain distinct hosts even if both reach the same machine. They are not guaranteed to reach the same listener because IPv4/IPv6 resolution may differ. Use the actual browser origin when comparing the allowlist, and keep the caller fixed during the policy experiment.</p></article></div>
+<div class="note"><strong>The symptom is not the cause.</strong> These cases isolate one changed condition for teaching. Real incidents can combine faults. Find a supported divergence, test alternatives and repeat the failed outcome after a targeted correction.</div></div></section>
+<section class="section" id="controls"><div class="wrap"><p class="eyebrow">Part 5 · The disciplines of tracing</p><h2>Four habits turn instruments into a diagnosis.</h2><p class="section-intro">Instruments only help if you use them in a disciplined way. Each habit below exists because a specific mistake is common: trusting the wrong caller, testing from the wrong place, reading silence as proof, or trusting a file over the running process.</p><div class="controls">
+<article class="control-card"><div class="control-head"><span class="num">01</span><div><h3>Observe the browser’s request</h3><p>The browser is the caller. Start where it starts.</p></div></div><div class="control-body"><p><strong>First-principles question:</strong> What exactly did the browser try to do, and what did it record?</p><p>The browser decides the final URL, adds the <code>Origin</code> header, and applies CORS. No other tool can see those decisions. Open DevTools before reproducing so the Network panel records the attempt.</p><ul><li>Open DevTools → Network, clear it, and click <strong>Check API</strong> exactly once.</li><li>Record the full request URL, method, status (or <code>(failed)</code> / <code>CORS error</code>), and timing.</li><li>Check the Console for the browser’s own explanation.</li><li>If no request appears, check filters and whether the click handler ran at all.</li></ul><div class="split"><div class="mini"><strong>Supports</strong><p>Whether a request was attempted, to which URL, and the browser-level outcome.</p></div><div class="mini"><strong>Cannot prove alone</strong><p>Why the server behaved as it did.</p></div></div></div></article>
+<article class="control-card"><div class="control-head"><span class="num">02</span><div><h3>Test the API directly</h3><p>Take the browser out to isolate the server.</p></div></div><div class="control-body"><p><strong>First-principles question:</strong> If I remove the browser, the page code, and CORS, does the server answer?</p><p><code>curl -i</code> tests the listener, routing, and response with nothing in between. Adding <code>-H "Origin: http://127.0.0.1:5173"</code> lets you see which CORS headers the server would send to that origin—without the browser enforcing them.</p><ul><li>Run curl against the <em>expected</em> URL, then against the <em>actual</em> URL from Network.</li><li>Read the status line, the headers, and the body.</li><li>Note where the shell runs: your laptop, a container, or a VM.</li><li>Compare connection refused, timeout, <code>404</code>, and <code>500</code>—they mean different things.</li></ul><div class="split"><div class="mini"><strong>Supports</strong><p>Reachability and HTTP behaviour from that command’s location.</p></div><div class="mini"><strong>Cannot prove alone</strong><p>Browser CORS enforcement, the browser’s network path, or React rendering.</p></div></div></div></article>
+<article class="control-card"><div class="control-head"><span class="num">03</span><div><h3>Read the server’s own evidence</h3><p>Let the process tell you what it received.</p></div></div><div class="control-body"><p><strong>First-principles question:</strong> Did the request arrive at <em>this</em> process, and what did the process do with it?</p><p>A log line written by the server is evidence from inside the boundary. It confirms arrival, method, path, and status. A traceback shows where Python code failed. But logs are only as complete as their configuration.</p><ul><li>Find the terminal running uvicorn and confirm it is the process on the expected port.</li><li>Match the log line to your click by time, method, and path.</li><li>For a <code>500</code>, read the traceback; it names the failing line.</li><li>Before reading silence as “no traffic,” confirm access logging is on.</li></ul><div class="split"><div class="mini"><strong>Supports</strong><p>Arrival and handling inside the API process.</p></div><div class="mini"><strong>Cannot prove alone</strong><p>Unlogged requests, or anything the browser did after the reply left.</p></div></div></div></article>
+<article class="control-card"><div class="control-head"><span class="num">04</span><div><h3>Compare intended vs effective config</h3><p>The file says what you meant. The process does what it loaded.</p></div></div><div class="control-body"><p><strong>First-principles question:</strong> Is the running process actually using the configuration I am reading?</p><p>Configuration flows from files and environment variables into a process at a specific moment—usually startup or build time. Any change after that moment is invisible to the running process until it restarts or rebuilds.</p><ul><li>Compare the URL in source/<code>.env</code> with the URL in the Network panel.</li><li>Compare the CORS allowlist with the <code>Access-Control-Allow-Origin</code> header curl shows.</li><li>Check for environment-variable overrides and multiple <code>.env</code> files.</li><li>When they differ, restart the right process and observe again.</li></ul><div class="split"><div class="mini"><strong>Supports</strong><p>What the system was told to do.</p></div><div class="mini"><strong>Cannot prove alone</strong><p>What the running system is doing now.</p></div></div></div></article>
+</div><h3 style="margin-top:42px">Diagnostic instrument reference</h3><p class="section-intro">Keep this table beside you during any trace. The right-hand column is the one people forget: it is the claim you must not make from that instrument alone.</p><div class="table-wrap"><table><thead><tr><th>Instrument</th><th>What to inspect</th><th>Supports</th><th>Cannot prove alone</th></tr></thead><tbody><tr><td>Browser address bar</td><td>Exact scheme, host, port, and path</td><td>Which frontend URL was opened</td><td>API reachability</td></tr><tr><td>DevTools → Network</td><td>Request URL, method, status, timing, headers/body where available</td><td>Browser attempt + network-level result</td><td>Backend internal reason without server evidence</td></tr><tr><td>DevTools → Console</td><td>JavaScript errors and browser policy messages</td><td>Client-side exceptions, CORS diagnostics</td><td>That every server component is healthy</td></tr><tr><td>curl -i against API</td><td>Status line, response headers, body</td><td>Direct reachability and HTTP response from the command’s location</td><td>Browser CORS behaviour or React rendering</td></tr><tr><td>FastAPI process terminal</td><td>Request/exception logs at the configured level</td><td>Process received/handled a request or raised</td><td>Unlogged requests, or upstream browser behaviour</td></tr><tr><td>Source/config files</td><td>URL constants, origin allowlist, route declarations</td><td>Intended configuration</td><td>Effective running configuration if overrides or stale process state exist</td></tr></tbody></table></div></div></section>
+<section class="section alt" id="worksheet"><div class="wrap"><p class="eyebrow">Part 6 · Worked example from first principles</p><h2>One click, twelve fields, no guessing.</h2><p class="section-intro">Record expectation beside observation, then test explanations against alternatives. This is an illustrative worked trace of Failure C, not recorded execution. Assume one laptop, no proxy, the supplied handler, and a simple GET without credentials or custom headers.</p>
+<div class="grid two"><article class="card"><div class="kicker">Concept 1</div><h3>Expected vs actual</h3><p>The expected API URL comes from the requirement/configuration. The actual URL comes from the browser. A difference locates a boundary; matching values do not prove all later steps work.</p></article><article class="card"><div class="kicker">Concept 2</div><h3>First divergence</h3><p>Find the first observed mismatch. Later failures may be consequences or additional faults; do not assume there can be only one cause.</p></article><article class="card"><div class="kicker">Concept 3</div><h3>Hypothesis, not conclusion</h3><p>“The API does not allow http://127.0.0.1:5173” predicts no matching <code>Access-Control-Allow-Origin</code> on this response. Write that prediction before inspecting headers.</p></article><article class="card"><div class="kicker">Concept 4</div><h3>Falsifying test</h3><p>If a direct response has the matching header, the simple allowlist explanation is insufficient. Compare the browser's actual response and request mode; proxies, caches and credentials can make requests differ. Surviving one test alone does not establish a root cause.</p></article></div>
+<h3 style="margin-top:42px">Worked trace: change only the allowed origin</h3>
+<p>Baseline: with <code>http://127.0.0.1:5173</code> allowed, the API returns 200, the matching header and the supplied JSON; the browser reads it and renders <strong>Response received</strong>. Now allow only <code>http://localhost:5173</code> and restart the API. Keep the page at 127.0.0.1. <strong>Predict separately:</strong> will curl obtain a response, and will page code be allowed to read it?</p>
+<div class="steps">
+<div class="step"><div><strong>Record the page and its origin</strong><p>Address bar: <code>http://127.0.0.1:5173/</code>. Origin: <code>http://127.0.0.1:5173</code>, the scheme/host/effective-port tuple, without a path.</p></div></div>
+<div class="step"><div><strong>Record the expected target</strong><p><code>GET http://127.0.0.1:8000/api/status</code>. The listener and route are unchanged.</p></div></div>
+<div class="step"><div><strong>Reproduce with DevTools open</strong><p>Network shows the intended URL and a blocked cross-origin read. Console explains the missing permission. This plain GET can reach the server without an OPTIONS preflight.</p></div></div>
+<div class="step"><div><strong>Compare a direct request with the actual Origin</strong><p>Curl with <code>Origin: http://127.0.0.1:5173</code> returns 200 and JSON, but <strong>Access-Control-Allow-Origin is absent</strong>. The supplied restrictive middleware omits the header for a disallowed origin; it does not send the other allowed origin instead.</p></div></div>
+<div class="step"><div><strong>Correlate the server log</strong><p>A matching <code>GET /api/status HTTP/1.1" 200 OK</code> supports arrival and route handling for that request. It does not prove browser readability. Curl also creates a log entry, so match the single click by time and order.</p></div></div>
+<div class="step"><div><strong>Test the explanation without moving the caller</strong><p>Compare the effective API allowlist with the actual Origin and missing response header. Keep the frontend hostname fixed: switching to localhost could also alter IPv4/IPv6 resolution and would no longer isolate the allowlist change.</p></div></div>
+<div class="step"><div><strong>Restore and verify</strong><p>Restore the exact intended origin, restart the API and repeat direct and browser checks. The expected after-state is 200 plus a matching allow-origin header, the documented body and <strong>Response received</strong>. If any is missing, record the contradiction and continue investigating; do not claim the scenario passed.</p></div></div>
+</div>
+<h3 style="margin-top:42px">Illustrative output shapes</h3><p class="section-intro">These excerpts omit incidental headers and invent no capture timestamp or content length. Actual browser wording may vary. Record your own output in the lab.</p>
+<p><strong>Direct response during the mismatched-allowlist case:</strong></p>
+<div class="code">HTTP/1.1 200 OK<br>content-type: application/json<br><br>{"service":"groundops-api","status":"available","message":"The browser reached the FastAPI endpoint.","version":"0.1.0"}</div>
+<p><strong>Header observation:</strong> Access-Control-Allow-Origin is absent. The constant body message does not prove the caller was a browser.</p>
+<p><strong>Different failure, stopped listener:</strong> a direct request can instead fail with curl error 7 (could not connect) and no HTTP status. A timeout is a different observation; record the actual result rather than treating every connection failure as identical.</p>
+<div class="code">Illustrative server log: GET /api/status HTTP/1.1" 200 OK<br>Illustrative browser: request URL http://127.0.0.1:8000/api/status<br>Origin: http://127.0.0.1:5173<br>Console: blocked by CORS policy; no Access-Control-Allow-Origin header on the response.</div>
+<div class="callout-warn"><strong>Read evidence at its boundary.</strong> A 200 response and access log establish server handling, not browser permission or rendering. A missing permission header explains this read failure without implying the listener was down. CORS is not authentication.</div>
+<h3 style="margin-top:42px">Your trace worksheet</h3><p class="section-intro">Nothing here is graded, saved or sent. Write your hypothesis before its discriminating test, then preserve the actual result, including contradictions. Filling every field cannot validate a diagnosis.</p>
+<article class="card trace-worksheet" aria-labelledby="worksheet-title"><div class="kicker">Trace worksheet</div><h3 id="worksheet-title">Don’t write “root cause” yet</h3><div id="worksheet-grid" class="worksheet-grid"><div class="worksheet-field"><label for="w1">Frontend URL opened</label><input id="w1" type="text" placeholder="http://127.0.0.1:5173"></div><div class="worksheet-field"><label for="w2">Browser origin</label><input id="w2" type="text" placeholder="scheme + host + port"></div><div class="worksheet-field"><label for="w3">Expected API URL</label><input id="w3" type="text" placeholder="http://127.0.0.1:8000/api/status"></div><div class="worksheet-field"><label for="w4">Actual API URL in Network tab</label><input id="w4" type="text"></div><div class="worksheet-field"><label for="w5">HTTP method and path</label><input id="w5" type="text" placeholder="GET /api/status"></div><div class="worksheet-field"><label for="w6">Browser result / status</label><input id="w6" type="text"></div><div class="worksheet-field"><label for="w7">Response status + Access-Control-Allow-Origin</label><input id="w7" type="text"></div><div class="worksheet-field"><label for="w8">Direct curl -i result</label><input id="w8" type="text"></div><div class="worksheet-field"><label for="w9">API log observation + limitations</label><input id="w9" type="text"></div><div class="worksheet-field"><label for="w10">First boundary where expectation and evidence diverge</label><input id="w10" type="text"></div><div class="worksheet-field"><label for="w11">Current hypothesis (not yet root cause)</label><input id="w11" type="text"></div><div class="worksheet-field"><label for="w12">Test that would falsify this hypothesis</label><input id="w12" type="text"></div></div><div class="worksheet-actions"><button class="btn" id="worksheet-clear" type="button">Clear worksheet</button></div><p class="status" id="worksheet-status" role="status" aria-live="polite"><strong>0 of 12 fields filled.</strong> Worksheet completion is not verification.</p></article>
+<div class="note"><strong>A bounded cause needs a causal chain:</strong> compare credible alternatives, make a targeted correction, repeat the failed outcome check, and state what remains untested. Several contributing conditions may coexist.</div></div></section>
+<section class="section" id="localhost"><div class="wrap"><p class="eyebrow">Part 7 · From symptom to diagnosis</p><h2>“localhost” follows the caller's network context.</h2><p class="section-intro">Loopback traffic returns within the caller's network namespace. Different callers can share that namespace or occupy different ones; a different program does not automatically mean a different machine. The following examples assume ordinary isolated container/Pod networking and direct connections unless a forwarding path is explicitly described.</p>
+<div class="grid two"><article class="card"><div class="kicker">Context A</div><h3>Browser on a laptop</h3><p>The page's code executes in the browser, even when a remote server supplied it. A direct request to localhost therefore targets the browser machine's loopback, not automatically the machine that supplied the page.</p><p><strong>Limit:</strong> a published port, local proxy or tunnel can deliberately forward that connection elsewhere. Inspect whether such a path exists rather than claiming localhost can never reach a container or remote API.</p></article>
+<article class="card"><div class="kicker">Context B</div><h3>Isolated Docker container</h3><p>Ordinary bridge-networked containers have a separate network context. Their localhost is not the host's loopback. A listener bound only to container 127.0.0.1 is not ordinarily reachable through traffic forwarded to the container's network interface.</p><p><strong>Consequence:</strong> the server needs a reachable container-interface binding, often 0.0.0.0, plus appropriate publication and policy. This is not permission to expose the Week 1 server broadly. Host-network/shared-namespace modes change the model. Docker Desktop's documented host.docker.internal name provides a host-reaching route; service binding and policy still matter.</p></article>
+<article class="card"><div class="kicker">Context C</div><h3>Remote shell and an explicit tunnel</h3><p>Curl in a remote VM shell tests that VM's localhost, not your laptop. A successful result is evidence about that caller and route.</p><p><strong>Changed condition:</strong> an authorized SSH local forward can deliberately bridge the contexts. In the illustrative syntax <code>ssh -L 8000:localhost:8000 vm</code>, SSH listens locally and opens the destination connection to localhost:8000 from the remote side. This is protocol explanation, not a Week 1 command to run; authentication, binding, available ports and authorization must also hold.</p></article>
+<article class="card"><div class="kicker">Context D</div><h3>Ordinary Kubernetes Pod networking</h3><p>Containers in one Pod share its IP address and port space, so they can communicate using localhost. Different ordinary Pods do not share that loopback and use an appropriate Service or Pod address instead.</p><p><strong>Limit:</strong> host-networked Pods are a different topology. Do not infer namespace separation merely from two process or Pod names; identify the actual networking mode before predicting reachability.</p></article></div>
+<div class="callout-warn"><strong>Address family is another condition.</strong> Localhost can resolve to IPv4 127.0.0.1 and IPv6 ::1. Uvicorn's default host is 127.0.0.1 and port is 8000; the lab also supplies these explicitly. With no IPv6 listener, a client attempting only ::1 may fail even when IPv4 works. Compare resolved destination and listener instead of treating every hostname failure as CORS.</div>
+<h3 style="margin-top:42px">Choose observations that separate causes</h3><div class="grid two"><article class="card"><h3>Intervention</h3><p>Restarting, editing configuration or rebuilding changes state and can discard useful evidence. Recovery alone does not establish which condition mattered. Preserve inexpensive observations first when safe.</p></article><article class="card"><h3>Observation</h3><p>Read the actual Network result, Console diagnostic, direct response and relevant logs. A discriminating observation has different predicted results under different explanations. Even a diagnostic HTTP request adds load and logs; “read-only” is about intended application effects, not zero side effects.</p></article></div>
+<div class="steps">
+<div class="step"><div><strong>1. Record the symptom</strong><p>Name the action, actual message, caller and time. “API down” is an explanation, not a raw observation.</p></div></div>
+<div class="step"><div><strong>2. List credible explanations</strong><p>Wrong target, unavailable listener, policy rejection, server error and incorrect response handling predict different evidence. More than one may contribute.</p></div></div>
+<div class="step"><div><strong>3. Locate the caller</strong><p>Identify the browser or shell initiating the connection, its network context and any proxy or tunnel. A test from elsewhere answers a different question.</p></div></div>
+<div class="step"><div><strong>4. Compare the actual request</strong><p>A wrong URL points toward configuration. Connection refusal concerns connection establishment. A CORS diagnostic concerns browser policy. A 500 is an HTTP server-error response; a 200 still needs body and rendering checks. These are leads, not unique root causes.</p></div></div>
+<div class="step"><div><strong>5. Cross-check at the other boundary</strong><p>Compare the corresponding direct response and server log with the same target/time. Missing logs require known coverage, and an intermediary may answer before the API.</p></div></div>
+<div class="step"><div><strong>6. Correct one supported condition and repeat</strong><p>Restart only where configuration loading requires it, repeat the original user action and keep before/after evidence. Record any new mismatch instead of extending the old diagnosis to explain everything.</p></div></div>
+</div><div class="callout-good"><strong>Carry this question forward:</strong> which process made the connection, from which network context, through which route? That question—not memorizing a special hostname—makes an unfamiliar topology diagnosable.</div></div></section>
+<section class="section alt" id="contract"><div class="wrap"><p class="eyebrow">Part 8 · The operating contract</p><h2>Eight claims you must be able to defend.</h2><p class="section-intro">Before saying “the request works” or “I found the cause,” name the evidence and its limit. Open each question after trying to answer it from your trace.</p><div class="contract">
+<details><summary>01 · Did I separate page files from API data?</summary><p>Vite's page-file exchange and the later FastAPI request are distinct. A rendered page alone does not establish API reachability.</p><div class="evidence-pill">Evidence: document/asset requests and the separate API row, with their actual results.</div></details>
+<details><summary>02 · Do I know each instrument's scope?</summary><p>Address bar, Network, Console, curl, logs and files see different boundaries. Record caller, location, time and version rather than combining unrelated observations.</p><div class="evidence-pill">Evidence: an instrument attached to each claim, plus a cross-check where its blind spot matters.</div></details>
+<details><summary>03 · Did code check status and body?</summary><p><code>fetch()</code> can resolve on 404 or 500. Check <code>response.ok</code> (200–299) or status before treating the body as success; then validate the expected fields. Rejections can include network/policy errors, invalid request inputs or cancellation, not only an unavailable server.</p><div class="evidence-pill">Evidence: defined success and error states, with any unexecuted error tests explicitly recorded.</div></details>
+<details><summary>04 · Did I separate CORS from authentication?</summary><p>CORS governs cross-origin browser reading, not caller identity or all server access. A simple GET may reach the handler even if the response is unreadable. A JSON POST or non-safelisted header generally requires a preflight, unless a valid preflight result is cached. Curl does not enforce this browser policy.</p><div class="evidence-pill">Evidence: actual Origin, allow-origin response header and any OPTIONS row. The local lab has no authentication; production authorization is a separate requirement.</div></details>
+<details><summary>05 · Did I test look-alike explanations?</summary><p>Wrong target, stopped listener and disallowed origin can produce similar page errors. A matching URL excludes one mismatch, not every connectivity fault; direct curl and a matching header still do not establish browser rendering.</p><div class="evidence-pill">Evidence: predictions for alternatives, observations from the relevant callers, and contradictions kept in the record.</div></details>
+<details><summary>06 · Did I test where the caller runs?</summary><p>Localhost refers to the caller's network context. A remote shell, isolated container or Pod can differ from a laptop browser; callers sharing a network namespace share its loopback.</p><div class="evidence-pill">Evidence: the execution context recorded alongside each result.</div></details>
+<details><summary>07 · Is the cause bounded rather than merely plausible?</summary><p>A tested causal explanation needs more than a hypothesis surviving one check. Compare alternatives and verify a targeted correction; multiple contributing conditions can remain. Recovery does not prove every part of the causal story.</p><div class="evidence-pill">Evidence: discriminating result, relevant change, repeated user action and remaining uncertainty.</div></details>
+<details><summary>08 · Does the failure path fail usefully?</summary><p>Verify the page action, response and rendered result, then relevant failure behavior. An available response should not become false success, and a failed request should not leave an unexplained spinner. Do not claim unrun failure paths passed.</p><div class="evidence-pill">Evidence: stopped-API recovery in the lab; other HTTP/error-path checks identified separately with their actual execution status.</div></details>
+</div></div></section>
+<section class="section" id="at-scale"><div class="wrap"><p class="eyebrow">Part 9 · At production scale</p><h2>Production can add boundaries the local trace never exercised.</h2><p class="section-intro">The Week 1 trace has one browser, two processes and one machine. A production design may add DNS resolution, a CDN or proxy, a load balancer, a gateway and downstream services. These are possible topologies, not requirements for every application. Each additional component introduces another place to compare expectation with evidence. DNS lookup is a setup step, not an HTTP request passing through a DNS server.</p>
+<div class="grid two">
+<article class="card"><div class="kicker">Failure mode · Preflight cost and stale CORS caches</div><h3>Two caches can affect one browser request</h3><p><strong>Mechanism:</strong> JSON POSTs and requests with non-safelisted headers such as Authorization or traceparent require preflight permission. An OPTIONS exchange is needed when no applicable cached preflight permission exists. MDN documents a default maximum age of five seconds, Chromium's two-hour cap and Firefox's 24-hour cap; these are browser-version-sensitive limits, not promised retention. FastAPI's middleware default is 600 seconds. A separate shared HTTP cache can reuse one origin's response header for another if its cache policy ignores a varying Origin.</p><p><strong>What operators see:</strong> an uncached preflight adds a round trip, but not every call pays it and total latency need not double. Different cache states can make users see different behavior. A preflight permission does not remove the browser's checks on the actual response.</p><p><strong>Control and cost:</strong> a same-origin route removes this cross-origin boundary for those calls, but not authentication needs. Otherwise allowlist intended origins, use Vary: Origin when a cacheable response varies by Origin, and choose cache lifetimes deliberately. Direct checks with an Origin header expose server headers; retain a browser check because curl still cannot enforce browser policy.</p></article>
+<article class="card"><div class="kicker">Failure mode · Retries without idempotency</div><h3>“The fetch failed” does not mean “the server did nothing”</h3><p><strong>Mechanism:</strong> a connection can fail after server work finishes; a proxy may time out while work continues; the browser can withhold an already-produced reply. A repeated request may therefore repeat the operation. RFC 9110 defines GET, HEAD, PUT, DELETE, OPTIONS and TRACE as idempotent: their intended effect is unchanged by repetition. POST is not inherently idempotent, although a particular API can provide an idempotency contract.</p><p><strong>What operators see:</strong> duplicate orders, bursts of retried traffic or a dependency unable to recover under added load. Idempotency concerns intended effects, not identical responses, zero logging side effects or free capacity.</p><p><strong>Control and cost:</strong> do not automatically retry non-idempotent work without evidence it was not applied or a contract making replay safe. A server-supported request key can deduplicate attempts, but storage, expiration and concurrency semantics must be defined. Bound retries, use capped backoff and jitter, and avoid independent retries at every layer. These are design proposals, not features implemented in the Week 1 app.</p></article>
+<article class="card"><div class="kicker">Failure mode · Timeouts and tail latency</div><h3>A slow dependency can dominate one user action</h3><p><strong>Mechanism:</strong> fetch has no numeric timeout option; a supported AbortSignal, such as AbortSignal.timeout(5000), can bound client waiting in milliseconds. That signal uses active time and may pause when a document is suspended; it is not a wall-clock service guarantee. Cancellation does not establish that server work or side effects stopped. An outer proxy can give up before an inner operation completes.</p><p><strong>Worked calculation:</strong> assume 100 independent calls, each with a 1% chance of exceeding a chosen slow threshold. The chance at least one is slow is 1 − 0.99<sup>100</sup> ≈ 63%. Independence and equal probabilities are assumptions; correlated calls or different thresholds change the result. These are illustrative values, not lab measurements.</p><p><strong>Control and cost:</strong> give the UI an explicit timeout state and propagate a remaining deadline where supported. Reserve time for returning/handling the result instead of letting dependencies outlive the caller's useful budget. Inspect high percentiles and user outcomes alongside averages. An aggressive deadline can reject useful work; choose it from service requirements and observed latency.</p></article>
+<article class="card"><div class="kicker">Failure mode · An intermediary answers first</div><h3>The API may not have generated the HTTP response</h3><p><strong>Mechanism:</strong> an edge proxy may terminate TLS and route to an API instance. Gateways can generate their own errors: RFC 9110's 502 concerns an invalid upstream response, 503 temporary unavailability and 504 an upstream timeout. The exact no-healthy-backend behavior is product-specific; some load balancers fail open. No single status proves a particular backend state.</p><p><strong>What operators see:</strong> a response format unlike the API's, gateway errors and no matching API line, or callers still using cached DNS answers after a change. The missing log alone cannot prove non-arrival.</p><p><strong>Control and cost:</strong> compare response-producing-layer logs with shared request identifiers, and plan DNS/cache lifetimes before migration. Use representative synthetic user checks separately from instance health decisions. Making every instance fail health because of a shared dependency can remove all capacity; design readiness and fail-open behavior against that risk, not a universal “deep health check” rule.</p></article>
+<article class="card"><div class="kicker">Failure mode · Partial instance or regional failure</div><h3>“It works for me” is one caller's sample</h3><p><strong>Mechanism:</strong> a stale setting on one instance can affect only its routed traffic. A manual request might repeatedly reach a healthy instance through affinity or chance, while another cohort fails. This is possible, not a claim that all traffic is evenly balanced.</p><p><strong>What operators see:</strong> failures correlated with version, location or instance, including an allowlist updated on only part of a fleet. A global average can hide that group.</p><p><strong>Control and cost:</strong> attach useful version/location identity to appropriate telemetry and compare cohorts. Choose metric dimensions with a cardinality budget rather than attaching every identifier to every metric. External probes from relevant locations extend the evidence population, but remain samples rather than proof of every user's experience.</p></article>
+<article class="card"><div class="kicker">Failure mode · Losing request identity across services</div><h3>Trace context joins recorded operations, not missing evidence</h3><p><strong>Mechanism:</strong> W3C traceparent version 00 uses the fields <code>version-trace-id-parent-id-trace-flags</code>, for example <code>00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01</code>. The trace ID is 16 bytes (32 hexadecimal characters); parent-id is an 8-byte identifier for the caller's operation. Instrumentation creates spans with their own span IDs and parent links. When sending a downstream request within that trace, it propagates the trace ID and identifies the sending operation in parent-id.</p><p><strong>What operators see:</strong> retained spans can reveal relationships and measured durations. The trace ID is a correlation key, not a sortable clock, proof of root cause or guarantee all hops were recorded. Missing instrumentation, sampling and export failures can leave an incomplete trace.</p><p><strong>Control and cost:</strong> propagate context across intended trust boundaries and correlate logs with spans. Validate untrusted incoming context and avoid sensitive identifiers in headers. Browser-added traceparent is not CORS-safelisted: preflight must permit it (or applicable permission must be cached). Returning an opaque correlation ID can help support, but does not authorize access to private traces.</p></article>
+</div>
+<div class="callout-warn"><strong>Scale makes unfounded changes more expensive.</strong> Even locally, restarting can lose useful state; no fixed ten-second recovery is promised. A fleet restart can interrupt requests and trigger retries. Observe from the failing caller, keep interventions bounded, and preserve inexpensive evidence without delaying authorized urgent mitigation.</div>
+<h3 style="margin-top:42px">The same trace, three different scales</h3><div class="table-wrap"><table><thead><tr><th>Question</th><th>One machine (Week 1)</th><th>One production service</th><th>Fleet, regions, many teams</th></tr></thead><tbody>
+<tr><td>Relevant boundaries</td><td>Two local programs and ports</td><td>May add DNS, TLS and a balancer</td><td>May add edge, gateways and dependencies</td></tr>
+<tr><td>Which destination answered?</td><td>The observed local listener</td><td>A selected instance or intermediary</td><td>Record region, version and responding layer</td></tr>
+<tr><td>How to join records?</td><td>Single-click time/order and URL</td><td>Shared request identity</td><td>Trace ID plus recorded span relationships; expect gaps</td></tr>
+<tr><td>Where is browser permission set?</td><td>API middleware response headers</td><td>API or gateway configuration</td><td>Inspect actual responses and relevant cache state</td></tr>
+<tr><td>What does a success establish?</td><td>This caller, action and time</td><td>This routed instance and request</td><td>This sampled cohort, version and window</td></tr>
+</tbody></table></div><div class="callout-good"><strong>The transferable rule:</strong> name the caller, responding layer and evidence coverage. Test credible alternatives and a targeted correction before naming a bounded cause. A surviving hypothesis or one complete-looking trace is not proof that no other condition contributed.</div></div></section>
+<section class="section alt" id="practice"><div class="wrap"><p class="eyebrow">Part 10 · Practice the reasoning</p><h2>Find the boundary. Then make the claim fit the evidence.</h2><p class="section-intro">Choose an answer before reading the explanation. Reason from what each instrument can and cannot see.</p>
+<div class="quiz" data-quiz="1"><h3>Scenario 1 · The log is silent</h3><p>The card fails. The uvicorn terminal shows no line at the time of the click. The Network panel shows a request to <code>http://127.0.0.1:8080/api/status</code> with status <code>(failed)</code>. curl to <code>http://127.0.0.1:8000/api/status</code> returns <code>200</code>. What is the best-supported conclusion?</p><div class="options"><button class="option" data-correct="false">A. The API process crashed; restart it.</button><button class="option" data-correct="true">B. The browser is calling the wrong port; the configured API URL is the first divergence.</button><button class="option" data-correct="false">C. CORS is blocking the request; add the origin to the allowlist.</button><button class="option" data-correct="false">D. The log proves no request ever left the browser.</button></div><div class="answer"><strong>Reasoning:</strong> Network shows the actual target (port 8080) differs from the expected one (8000), and curl to 8000 succeeds, so the API is fine. This is Failure A. The silent log is consistent with the browser calling elsewhere—but on its own it proves nothing, which is why D over-claims.</div></div>
+<div class="quiz" data-quiz="2"><h3>Scenario 2 · curl works, the browser does not</h3><p>Network shows the correct URL with status <code>CORS error</code>. The API log shows <code>"GET /api/status HTTP/1.1" 200 OK</code> at the click time. A teammate proposes setting the allowlist to <code>["*"]</code> and turning on credentials “to be safe.” What is the right response?</p><div class="options"><button class="option" data-correct="false">A. Agree—CORS is what protects the API, so loosening it is risky but necessary.</button><button class="option" data-correct="false">B. Restart the API; a 200 in the log means the server is fine and the browser is confused.</button><button class="option" data-correct="true">C. Compare the page’s exact origin with the returned Access-Control-Allow-Origin, and add only that origin.</button><button class="option" data-correct="false">D. Switch the fetch to curl-like mode so the browser stops checking.</button></div><div class="answer"><strong>Reasoning:</strong> The request arrived and succeeded server-side; the browser withheld the reply, so the first divergence is the CORS check. The fix is the smallest correct allowlist. A wildcard cannot be combined with credentials anyway, and CORS is not what protects the API—authentication is. There is no supported way to make page code bypass CORS.</div></div>
+<div class="quiz" data-quiz="3"><h3>Scenario 3 · The container’s localhost</h3><p>You move the API into a Docker container and publish port 8000. Inside the container, <code>curl localhost:8000/api/status</code> returns <code>200</code>. From your laptop’s browser, the card fails with connection refused. uvicorn was started with its default host. What is the most likely first divergence?</p><div class="options"><button class="option" data-correct="false">A. The browser needs to use host.docker.internal instead of localhost.</button><button class="option" data-correct="true">B. uvicorn listens on 127.0.0.1 inside the container’s own namespace, so published traffic cannot reach it; it should listen on 0.0.0.0.</button><button class="option" data-correct="false">C. The in-container curl proves the browser can reach the API, so the problem must be React.</button><button class="option" data-correct="false">D. CORS is blocking it, because connection refused is how CORS errors appear.</button></div><div class="answer"><strong>Reasoning:</strong> The in-container curl tested the container’s own loopback—a different context from the browser. uvicorn’s default host is <code>127.0.0.1</code>, which inside a container means “only this namespace.” Traffic forwarded through the published port arrives on the container’s network interface, where nothing listens. <code>host.docker.internal</code> is for the opposite direction: a container reaching the host.</div></div>
+<div class="quiz" data-quiz="4"><h3>Scenario 4 · A 404 that renders as success</h3><p>After a refactor, the card shows “Status: undefined.” Network shows <code>GET /api/v1/status</code> returning <code>404</code> with a small JSON error body. The code does <code>const data = await res.json(); setStatus(data.status)</code>. Which statement is correct?</p><div class="options"><button class="option" data-correct="false">A. fetch would have rejected on 404, so the request must never have been sent.</button><button class="option" data-correct="false">B. A 404 means the API server is down.</button><button class="option" data-correct="true">C. The server is reachable but lacks that route; the code also fails to check response.ok, so it renders an error body as data.</button><button class="option" data-correct="false">D. The JSON body proves the request succeeded.</button></div><div class="answer"><strong>Reasoning:</strong> A 404 proves a reachable server answered and had no matching route—here the path changed. <code>fetch()</code> resolves on 404, so the code must check <code>res.ok</code> before treating the body as success. Two fixes: correct the path, and add a real error state so the next failure is visible.</div></div>
+<div class="exit card" style="margin-top:30px"><p class="eyebrow">Exit check</p><h3>Repair this statement.</h3><p>A learner says: <strong>“curl returns HTTP 200, so the frontend is working.”</strong> What you know: curl was run from the learner’s own terminal, not the browser; the status card in the UI still shows an error; no one has checked the browser’s Network tab yet. Rewrite the claim so it says exactly what curl proved, and names what is still unverified.</p><p class="small">Weak repairs to avoid: “This proves the whole system works, since curl succeeded” (over-claims curl’s scope); “I should restart the frontend, since curl worked but the UI didn’t” (an intervention before an observation); “CORS must be misconfigured, so I’ll allow all origins to be safe” (a guess plus an unsafe shortcut).</p><textarea id="exit-input" aria-label="Write your repaired statement" placeholder="Example: The API route returned HTTP 200 to curl from my terminal. I still need to check…"></textarea><button class="btn" id="show-example" type="button" aria-pressed="false">Show a strong example</button><p id="exit-example" class="answer">“The API route returned HTTP 200 to curl from that command’s environment. I still need to verify the browser calls the expected URL, the response is allowed by browser policy, React handles its status/body, and the requested UI outcome appears.”</p></div></div></section>
+<section class="section" id="glossary"><div class="wrap"><p class="eyebrow">Reference · Plain-English glossary</p><h2>Technical words, without the assumed knowledge.</h2><p class="section-intro">Use this section whenever a word feels like jargon. Search by a term or a phrase. Learn to ask what each word means from the point of view of the program making the request.</p><div class="glossary-tools"><input type="search" id="glossary-search" placeholder="Search terms: origin, CORS, port…" aria-label="Search glossary"><span class="small" id="glossary-count">28 terms</span></div><div class="glossary" id="glossary-list">
+<details data-term="access-control-allow-origin acao cors header"><summary>Access-Control-Allow-Origin</summary><p>A response header in which a server names the origin allowed to read the response (or <code>*</code> for any origin, which cannot be combined with credentials). The browser compares it exactly with the page’s origin.</p></details>
+<details data-term="asgi server interface python async"><summary>ASGI</summary><p>Asynchronous Server Gateway Interface: the Python standard that lets a server such as uvicorn hand HTTP requests to an application such as FastAPI. The server owns the network listener; the application owns the routes.</p></details>
+<details data-term="cors cross origin resource sharing browser policy"><summary>CORS</summary><p>Cross-Origin Resource Sharing: a browser-enforced policy in which a server uses response headers to say which other origins may read its responses. It controls reading in the browser, not access to the server, and is not authentication.</p></details>
+<details data-term="curl command line http client"><summary>curl</summary><p>A command-line tool for making HTTP requests. <code>-i</code> includes the status line and response headers in the output; <code>-H</code> adds a request header. It runs from wherever your shell runs and does not enforce CORS.</p></details>
+<details data-term="devtools developer tools network console"><summary>DevTools</summary><p>The browser’s built-in developer tools. The Network panel records the page’s requests and responses while open; the Console shows JavaScript errors and browser policy messages.</p></details>
+<details data-term="dns domain name system resolve ttl"><summary>DNS</summary><p>Domain Name System: the service that turns host names into IP addresses. Answers are cached for each record’s time-to-live (TTL), so a change can take time to reach every client.</p></details>
+<details data-term="fastapi framework python api"><summary>FastAPI</summary><p>A Python web framework. You declare path operations—an HTTP method plus a path mapped to a function—and FastAPI returns the function’s result as JSON.</p></details>
+<details data-term="fetch javascript api request promise"><summary>fetch()</summary><p>The browser’s JavaScript function for HTTP requests. It returns a promise that resolves when a response arrives—even a 404 or 500—and rejects on network failures or blocked requests. It has no built-in timeout option.</p></details>
+<details data-term="host hostname name address"><summary>Host</summary><p>The part of a URL that names the machine to contact, such as <code>127.0.0.1</code>, <code>localhost</code>, or <code>api.example.com</code>. It must be resolved to an address from the caller’s point of view.</p></details>
+<details data-term="http status code 200 404 500"><summary>HTTP status code</summary><p>A three-digit number summarising how a server handled a request: 2xx success, 3xx redirection, 4xx a client-side problem such as 404 Not Found, 5xx a server-side failure such as 500. A 200 is not proof the body is correct.</p></details>
+<details data-term="hypothesis explanation test falsify"><summary>Hypothesis</summary><p>A proposed explanation that predicts something you have not observed yet. A useful one can be tested—and proved wrong—by a specific observation.</p></details>
+<details data-term="idempotent idempotency retry safe"><summary>Idempotent</summary><p>Repeating an operation has the same intended effect as doing it once. HTTP defines GET, HEAD, PUT, DELETE, OPTIONS and TRACE as idempotent; POST is not inherently so. This does not make unlimited retries safe: load and side effects still matter. A non-idempotent operation needs an explicit deduplication/retry contract.</p></details>
+<details data-term="localhost loopback 127.0.0.1 ::1"><summary>localhost</summary><p>A host name meaning “this machine or network namespace, from the caller’s point of view.” It usually resolves to <code>127.0.0.1</code> and/or <code>::1</code>. Its meaning changes with the context that resolves it.</p></details>
+<details data-term="loopback interface 127.0.0.1"><summary>Loopback interface</summary><p>A virtual network interface whose traffic never leaves the machine or namespace that sent it. <code>127.0.0.1</code> is the IPv4 loopback address; <code>::1</code> is the IPv6 one.</p></details>
+<details data-term="network namespace container pod isolation"><summary>Network namespace</summary><p>A network context with its own interfaces, routes, ports and loopback. Ordinary isolated containers and Pods differ from the host; host-network or shared-namespace modes are exceptions. Containers within one ordinary Pod share its context.</p></details>
+<details data-term="origin scheme host port same-origin"><summary>Origin</summary><p>The scheme, host and effective port of these HTTP(S) pages, normalized by URL parsing—not the full address-bar string. Localhost and 127.0.0.1 remain different hosts and origins even if both reach the same machine. A path is not part of this tuple.</p></details>
+<details data-term="port listen listener socket"><summary>Port</summary><p>A number from 0 to 65535 that lets one machine run many network services. A process listens on a port; a connection to a port with no listener is refused.</p></details>
+<details data-term="preflight options request cors"><summary>Preflight request</summary><p>An automatic <code>OPTIONS</code> request the browser sends before certain cross-origin requests—such as those with a JSON content type or custom headers—to ask the server whether the real request is allowed. Its result can be cached for <code>Access-Control-Max-Age</code> seconds.</p></details>
+<details data-term="response.ok fetch status check"><summary>response.ok</summary><p>A boolean on a fetch Response that is true only when the status is in the range 200–299. Code must check it (or the status) before treating a body as success.</p></details>
+<details data-term="root cause diagnosis confirmed"><summary>Root cause</summary><p>A causal condition demonstrated within a stated scope. Test alternatives and verify a relevant correction. One surviving hypothesis or one recovery does not prove a unique or complete cause; contributing conditions may remain.</p></details>
+<details data-term="scheme protocol http https"><summary>Scheme</summary><p>The URL prefix, such as http or https, naming the protocol. HTTPS to a plain-HTTP listener can fail; an HTTPS page fetching insecure non-loopback HTTP normally faces mixed-content blocking. Inspect actual browser policy rather than generalizing the local lab.</p></details>
+<details data-term="traceparent trace context distributed tracing w3c"><summary>traceparent</summary><p>A W3C propagation header. Version 00 fields are version, trace-id, parent-id and trace-flags. Parent-id identifies the caller's operation. Instrumented, retained spans can be joined using context; a header alone does not guarantee a complete trace or causal diagnosis.</p></details>
+<details data-term="uvicorn asgi server listener"><summary>uvicorn</summary><p>An ASGI server commonly used to run FastAPI. It opens the network listener (by default <code>127.0.0.1:8000</code>), accepts connections, passes requests to the app, and prints access and error logs.</p></details>
+<details data-term="vite dev server frontend build"><summary>Vite</summary><p>A frontend build tool and development server. In development it serves source files to the browser (default port 5173). Variables prefixed <code>VITE_</code> are read at startup or build time and exposed to client code, so they must never hold secrets.</p></details>
+<details data-term="vary origin cache header"><summary>Vary: Origin</summary><p>A response header telling caches that the response differs depending on the request’s <code>Origin</code> header. Without it, a shared cache can serve one origin’s CORS headers to another.</p></details>
+<details data-term="mixed content https http blocked"><summary>Mixed content</summary><p>A secure page loading insecure resources. Browsers block insecure fetches under mixed-content rules, but loopback resources have special potentially-trustworthy treatment. Other restrictions may still apply. Read the actual Console diagnostic; Week 1 does not validate HTTPS deployment.</p></details>
+<details data-term="path route endpoint operation"><summary>Path / route</summary><p>The part of a URL after the host and port, such as <code>/api/status</code>. A server maps method + path to code; a reachable server with no matching route returns 404.</p></details>
+<details data-term="load balancer proxy edge gateway"><summary>Load balancer / proxy</summary><p>A layer between client and server that accepts connections and forwards them to one of several backends. It can answer on the backend’s behalf—for example with 502 or 503—so the backend never sees or logs the request.</p></details>
+</div></div></section>
+<section class="section alt" id="sources"><div class="wrap"><p class="eyebrow">Further reading · Authoritative references</p><h2>Go deeper when you are ready.</h2><p class="section-intro">The lesson’s reasoning stands on its own. These references give the exact protocol, browser, and framework behaviour behind each claim.</p><ul class="source-list"><li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview" target="_blank" rel="noopener noreferrer">MDN · Overview of HTTP</a><p>Client/server request flow and the participants in an HTTP exchange.</p></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages" target="_blank" rel="noopener noreferrer">MDN · HTTP messages</a><p>Status lines, headers, and message bodies.</p></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS" target="_blank" rel="noopener noreferrer">MDN · Cross-Origin Resource Sharing (CORS)</a><p>Browser policy, simple versus preflighted requests, and credentialed requests.</p></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Max-Age" target="_blank" rel="noopener noreferrer">MDN · Access-Control-Max-Age</a><p>How long preflight results may be cached, and the browser caps on that value.</p></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Response/ok" target="_blank" rel="noopener noreferrer">MDN · Response.ok</a><p>Why a resolved fetch still needs its status checked.</p></li><li><a href="https://fastapi.tiangolo.com/tutorial/first-steps/" target="_blank" rel="noopener noreferrer">FastAPI · First Steps</a><p>Path operations and JSON response behaviour.</p></li><li><a href="https://fastapi.tiangolo.com/tutorial/cors/" target="_blank" rel="noopener noreferrer">FastAPI · CORS</a><p>CORSMiddleware configuration, origin definition, and defaults.</p></li><li><a href="https://www.uvicorn.org/settings/" target="_blank" rel="noopener noreferrer">Uvicorn · Settings</a><p>Default host and port, and access-log configuration.</p></li><li><a href="https://vite.dev/guide/env-and-mode" target="_blank" rel="noopener noreferrer">Vite · Env Variables and Modes</a><p>When <code>.env</code> files are loaded and why <code>VITE_</code> variables reach client code.</p></li><li><a href="https://developer.chrome.com/docs/devtools/network/overview" target="_blank" rel="noopener noreferrer">Chrome for Developers · Network panel</a><p>Recording and inspecting requests, headers, and timing.</p></li><li><a href="https://www.rfc-editor.org/rfc/rfc9110" target="_blank" rel="noopener noreferrer">RFC 9110 · HTTP Semantics</a><p>The definitions of status codes, safe methods, and idempotent methods.</p></li><li><a href="https://www.w3.org/TR/trace-context/" target="_blank" rel="noopener noreferrer">W3C · Trace Context</a><p>The <code>traceparent</code> and <code>tracestate</code> headers for distributed tracing.</p></li><li><a href="https://sre.google/sre-book/monitoring-distributed-systems/" target="_blank" rel="noopener noreferrer">Google SRE Book · Monitoring Distributed Systems</a><p>External symptom signals and internal cause signals in layered systems.</p></li></ul><div class="note"><strong>The lesson in one sentence:</strong> one UI message can hide many boundaries, so trace the request from the caller’s position, scope every claim to what its instrument can see, and call it a root cause only after a falsifying test has failed to kill it.</div></div></section>
+<div class="wrap learning-note" id="teaching-handoff"><h2>Mapped model and its limits</h2><p>A shop directory maps to the page files delivered by Vite; following a separate counter address maps to the browser's API request; a numbered counter and named task map to port and method/path; the reply reaching the customer maps to the rendered API result. Seeing the directory does not prove the clerk is available. A counter number is not permission: this analogy does not model CORS or authentication. Return to the actual Origin and response headers for browser read policy.</p><h3>Transfer and lab handoff</h3><p>A teammate's remote-machine curl gets 200 from localhost:8000, but your laptop browser cannot reach that typed address. Predict what each caller addressed and which observation distinguishes wrong destination from browser policy. Do not change permissions to answer it.</p><p>Carry your worksheet into <a href="../../week-01-groundops/labs/GRO-LAB01-run-and-trace-the-request.md">GRO-LAB01</a>, then pass the actual baseline and one bounded uncertainty to <a href="../../week-01-groundops/labs/GRO-LAB02-diagnose-the-broken-request-path.md">GRO-LAB02</a>. Change one fault at a time and verify direct and browser outcomes after recovery.</p><p><strong>Extension assumptions:</strong> container/Pod examples assume ordinary isolated networking, not host networking or a tunnel. Bind settings are examples, not permission to expose the local lab broadly. A trace ID joins recorded spans but cannot guarantee complete instrumentation or order unrelated events. The 63% fan-out example assumes 100 independent calls with equal 1% slow probability; it is not measured lab latency. Retry safety still needs a bounded policy even for idempotent methods.</p><p>Protocol details: <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch">MDN Window.fetch</a>; <a href="https://fastapi.tiangolo.com/reference/middleware/#fastapi.middleware.cors.CORSMiddleware">FastAPI middleware implementation</a>; <a href="https://docs.docker.com/engine/network/">Docker networking</a>; <a href="https://kubernetes.io/docs/concepts/workloads/pods/">Pod network scope</a>.</p></div>
+<div class="wrap" id="extension-sources"><p class="small">Extension source details: <a href="https://raw.githubusercontent.com/Kludex/uvicorn/main/uvicorn/config.py">Uvicorn default configuration (official repository)</a>; <a href="https://docs.docker.com/desktop/features/networking/networking-how-tos/">Docker Desktop host access</a>; <a href="https://man.openbsd.org/ssh">OpenSSH -L forwarding</a>; <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/timeout_static">MDN AbortSignal.timeout</a>; <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content">MDN mixed content and loopback</a>; <a href="https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/">AWS retries, timeouts and jitter</a>; <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html">AWS Application Load Balancer health/fail-open behavior</a>; <a href="https://prometheus.io/docs/practices/instrumentation/">Prometheus label-cardinality costs</a>.</p></div>
+</main>
+<footer class="footer"><div class="wrap footer-inner"><span><strong>VOIDINFINITY × GROUNDOPS</strong> · GRO-L02 · Trace the Full-Stack Request</span><span>Find the first divergence. Scope every claim to its instrument.</span><span><a href="#top">Back to top ↑</a></span></div>
+<nav class="lesson-pager" aria-label="Lesson navigation">
+  <a href="GRO-L01-human-infrastructure-layer.html">
+    <span class="pager-dir">Previous</span>
+    <span class="pager-title">GRO-L01 · The Human Infrastructure Layer</span>
+  </a>
+  <a class="pager-next" href="GRO-L03-evidence-first-operations.html">
+    <span class="pager-dir">Next &rarr;</span>
+    <span class="pager-title">GRO-L03 · Evidence-First Operations</span>
+  </a>
+</nav></footer>
+<script>
+const flowContent=[
+{label:"Step 1 · Frontend load",title:"The browser loads the frontend",body:"The learner navigates to http://127.0.0.1:5173. The Vite dev server returns an HTML document that references JavaScript and CSS. The browser downloads and executes the JavaScript, and React builds the user interface inside the page root element.",example:"Proves: the frontend server served enough assets for the browser to render the page. Does not prove: that the API server is running, that the API URL is correct, or that a later API request will succeed."},
+{label:"Step 2 · React fetch",title:"React initiates an HTTP request",body:"When the user selects Check API, the React handler calls fetch() for the configured API base URL plus /api/status. The default target is http://127.0.0.1:8000/api/status: scheme http, host 127.0.0.1, port 8000, path /api/status. The page origin differs by port, so this is a cross-origin request with an Origin header.",example:"A wrong scheme may cause TLS or policy failure; a wrong host or port may reach nothing or another service; an unknown path may return 404 from a reachable server. Observe the actual result rather than treating the URL alone as a diagnosis."},
+{label:"Step 3 · API boundary",title:"The request reaches the API boundary",body:"The operating system delivers the TCP connection to the process listening on port 8000: uvicorn, the ASGI server. Uvicorn parses the HTTP request and hands it to FastAPI, whose middleware (including CORS) runs before the router matches GET /api/status to its path operation. The function returns a dictionary, which FastAPI serialises to JSON.",example:"Proves (direct curl): the caller running curl reached a server that handled this route at that moment. Does not prove: the browser uses the same target, can reach the same network path, will accept the cross-origin response, or will interpret it correctly."},
+{label:"Step 4 · Status & body",title:"Status, headers, and body are separate signals",body:"HTTP status describes the HTTP result, not complete semantic correctness. Fetch can resolve on 404 or 500, so page code must inspect status. Network/policy failures can reject the promise; invalid request inputs and cancellation are other rejection cases. The exact error and caller context matter.",example:"Check response.ok (true for 200–299) or response.status, then the expected body fields. Otherwise an error body can be treated as success. One successful status does not establish the full user outcome."},
+{label:"Step 5 · Browser CORS",title:"The browser applies CORS",body:"Origins differ (port 5173 vs 8000), so before page code may read the response, the browser compares the response’s Access-Control-Allow-Origin header with the page origin. Some cross-origin requests—JSON POSTs, custom headers—need an OPTIONS preflight first; a simple GET does not. CORS is enforced by the browser; curl does not enforce it at all.",example:"CORS is not authentication or authorization. A request can reach the server, be logged as 200, and still be withheld from JavaScript. Do not “fix” it by reflecting any Origin or enabling credentials without a specific authenticated use case."},
+{label:"Step 6 · React renders",title:"React renders—the final boundary",body:"React shows the API message, renders an error state, or stays stuck loading. The correct outcome: the page renders without a runtime error; the click makes exactly the expected request; the API returns the documented JSON; the browser permits the read; the UI shows the status and message; failure paths show a useful error, never a false success or an infinite spinner.",example:"This end-to-end assertion is stronger than “the frontend started” plus “the backend started.” It is the only step that verifies what the user was promised."}
+];
+document.querySelectorAll('[data-flow]').forEach(btn=>btn.addEventListener('click',()=>{const d=flowContent[Number(btn.dataset.flow)];document.querySelectorAll('[data-flow]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));document.querySelector('#flow-detail').innerHTML=`<span class="label">${d.label}</span><h3>${d.title}</h3><p>${d.body}</p><div class="example"><strong>Example:</strong> ${d.example.replace(/^Possible failure: /,'')}</div>`;}));
+const stageContent={target:{label:"Failure A · Wrong API target",title:"Wrong API target",body:"Evidence: the Network panel shows a request to the wrong port or host, or a connection-level failure. A direct curl to the known-good API URL succeeds. The FastAPI log may show no matching request because the browser targeted another location. Fix: correct the configured API URL, restart or rebuild the frontend if the value is read at startup or build time, then repeat both the direct and the browser tests.",example:"Don’t assume “no API log” alone proves the API never received traffic—first confirm the log is complete and confirm the actual target."},stopped:{label:"Failure B · API process stopped",title:"API process stopped",body:"Evidence: a direct curl to the expected URL fails with connection refused (nothing listening) or times out (something in the path dropping packets), and the API terminal shows the process stopped or never started. In the browser, Network shows (failed) with net::ERR_CONNECTION_REFUSED. Fix: understand why the process stopped, restart it in a controlled way, then repeat health, route, and browser checks.",example:"Don’t treat a restart as root-cause analysis. If the process exits again, read the logs and the exit condition—a port already in use, an import error, or a missing environment variable."},cors:{label:"Failure C · CORS origin mismatch",title:"CORS origin mismatch",body:"Evidence: the Console reports a CORS policy error and Network shows a cross-origin request marked CORS error. The response lacks the necessary Access-Control-Allow-Origin for the actual browser origin, or sends a different value. Direct curl may succeed, and the API log may show it received the request. Fix: configure the smallest intended development origin allowlist, restart the API if settings load at startup, and retry from the exact frontend origin.",example:"Never disable browser security or broaden the allowlist as a production shortcut—and never claim CORS supplies authentication."},baseline:{label:"Baseline · Healthy trace",title:"Healthy trace",body:"Address bar shows the expected origin. Network shows exactly one request to the expected API URL with status 200, and its response headers include an Access-Control-Allow-Origin equal to the page origin. The Console is clean. curl -i to the same URL returns 200 with the documented JSON. The uvicorn log shows the matching GET line at the click time. The card shows the API’s status and message.",example:"Know the healthy reading of every instrument before an incident. A diagnosis is the first place a live trace differs from this baseline."}};
+document.querySelectorAll('[data-stage]').forEach(btn=>btn.addEventListener('click',()=>{const d=stageContent[btn.dataset.stage];document.querySelectorAll('[data-stage]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));document.querySelector('#stage-detail').innerHTML=`<span class="label">${d.label}</span><h3>${d.title}</h3><p>${d.body}</p><div class="example"><strong>Example:</strong> ${d.example}</div>`;}));
+document.querySelectorAll('#evidence-board .evidence').forEach(btn=>btn.addEventListener('click',()=>{btn.setAttribute('aria-pressed',String(btn.getAttribute('aria-pressed')!=='true'));const n=document.querySelectorAll('#evidence-board .evidence[aria-pressed="true"]').length;document.querySelector('#evidence-status').innerHTML=`<strong>${n} of ${document.querySelectorAll('#evidence-board .evidence').length} opened.</strong> Each instrument observes one slice of the journey from one position. To locate the boundary, combine an instrument on the browser side with one on the server side.`;}));
+document.querySelectorAll('.quiz').forEach(q=>{q.querySelectorAll('.option').forEach(btn=>btn.addEventListener('click',()=>{if(q.dataset.answered)return;q.dataset.answered='true';q.querySelectorAll('.option').forEach(o=>{o.disabled=true;if(o.dataset.correct==='true')o.classList.add('correct');else if(o===btn)o.classList.add('incorrect')});q.querySelector('.answer').classList.add('show')}));});
+document.querySelectorAll('.quiz').forEach(q=>{const answer=q.querySelector('.answer');answer.setAttribute('role','status');answer.setAttribute('aria-live','polite');const reset=document.createElement('button');reset.type='button';reset.className='button quiz-reset';reset.textContent='Reset this question';reset.addEventListener('click',()=>{delete q.dataset.answered;q.querySelectorAll('.option').forEach(o=>{o.disabled=false;o.classList.remove('correct','incorrect')});answer.classList.remove('show');q.querySelector('.option').focus()});q.append(reset)});
+document.querySelector('#show-example').addEventListener('click',e=>{const a=document.querySelector('#exit-example');a.classList.toggle('show');const shown=a.classList.contains('show');e.currentTarget.setAttribute('aria-pressed',String(shown));e.currentTarget.textContent=shown?'Hide example':'Show a strong example'});
+const search=document.querySelector('#glossary-search');search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();let count=0;document.querySelectorAll('#glossary-list details').forEach(d=>{const match=!q||(`${d.dataset.term} ${d.querySelector('summary').textContent} ${d.querySelector('p').textContent}`).toLowerCase().includes(q);d.hidden=!match;if(match)count++});document.querySelector('#glossary-count').textContent=`${count} term${count===1?'':'s'}`});
+const progress=document.querySelector('#progress');function updateProgress(){const h=document.documentElement.scrollHeight-innerHeight;progress.style.width=(h>0?Math.max(0,Math.min(1,scrollY/h)):1)*100+'%'}window.addEventListener('scroll',updateProgress,{passive:true});window.addEventListener('resize',updateProgress);updateProgress();
+</script>
+<script>
+const worksheetInputs=[...document.querySelectorAll('#worksheet-grid input')];
+function renderWorksheet(){const filled=worksheetInputs.filter(i=>i.value.trim().length>0).length;document.querySelector('#worksheet-status').innerHTML=`<strong>${filled} of ${worksheetInputs.length} fields filled.</strong> Worksheet completion is not verification. Check actual evidence, alternatives, a targeted correction and its outcome; keep uncertainty explicit.`}
+worksheetInputs.forEach(i=>i.addEventListener('input',renderWorksheet));
+document.querySelector('#worksheet-clear').addEventListener('click',()=>{worksheetInputs.forEach(i=>{i.value=''});renderWorksheet();worksheetInputs[0].focus()});
+renderWorksheet();
+</script>
 </body>
 </html>

@@ -1,717 +1,244 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GRO-L03 — Evidence-First Operations</title>
+<meta name="description" content="VoidInfinity GroundOps L03: a first-principles guide to evidence-first operations — separating observation from inference, climbing the system-state ladder, and making justified, verified repairs from a laptop to a fleet.">
+<title>GRO-L03 — Evidence-First Operations | VoidInfinity</title>
 <style>
-  :root {
-    --bg: #191817;
-    --fg: #f2efe9;
-    --sub: #a39e92;
-    --line: #33302b;
-    --panel: #201e1b;
-    --accent: #cc785c;
-    --accent-dim: #8a5440;
-    --accent-soft: rgba(204, 120, 92, .14);
-    --cream: #e8e2d4;
-    --good: #9caf88;
-    --bad: #c9644f;
-    --radius: 22px;
-    --ease: cubic-bezier(.16, 1, .3, 1);
+:root{--bg:#191817;--fg:#f2efe9;--sub:#b3ada2;--muted:#8f897f;--line:#39352f;--panel:#211f1b;--panel2:#141311;--accent:#d88768;--accent-dim:#8d5742;--soft:rgba(216,135,104,.12);--good:#a8c293;--bad:#e18470;--blue:#9db8d1;--radius:18px;--max:1120px;--ease:cubic-bezier(.16,1,.3,1)}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:90px}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased}a{color:var(--fg);text-decoration-color:var(--accent);text-underline-offset:4px}a:hover{color:var(--accent)}button,input,textarea{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}::selection{background:var(--accent);color:#171210}.wrap{width:min(var(--max),calc(100% - 48px));margin-inline:auto}.reading-progress{position:fixed;z-index:1000;top:0;left:0;width:0;height:3px;background:var(--accent)}.nav{position:sticky;top:0;z-index:900;background:rgba(25,24,23,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:22px;min-height:62px}.brand{font-size:13px;font-weight:850;letter-spacing:.04em;white-space:nowrap}.brand span{color:var(--accent)}.navlinks{display:flex;gap:16px;overflow:auto;white-space:nowrap;font-size:12px;color:var(--sub)}.navlinks a{text-decoration:none;color:var(--sub);padding:10px 0}.navlinks a:hover{color:var(--fg)}.hero{padding:88px 0 76px;border-bottom:1px solid var(--line);background:radial-gradient(ellipse at 82% 8%,rgba(216,135,104,.13),transparent 36%),linear-gradient(180deg,#1d1b18,var(--bg))}.eyebrow{margin:0 0 14px;color:var(--accent);text-transform:uppercase;letter-spacing:.13em;font-size:11px;font-weight:850}.hero h1{max-width:950px;font-size:clamp(42px,7.6vw,84px);line-height:1.01;letter-spacing:-.045em;margin:0 0 24px}.hero h1 em{font-style:normal;color:var(--accent)}.lead{max-width:800px;color:var(--sub);font-size:clamp(17px,2vw,21px);line-height:1.65}.promise{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin-top:42px;background:var(--line);border:1px solid var(--line)}.promise article{background:var(--panel2);padding:20px}.promise strong{display:block;font-size:14px;margin-bottom:6px}.promise p{margin:0;color:var(--sub);font-size:13px}.note{padding:18px 20px;border-left:3px solid var(--accent);background:var(--soft);color:var(--fg);margin:28px 0}.note p:last-child{margin-bottom:0}.section{padding:78px 0;border-bottom:1px solid var(--line)}.section.alt{background:var(--panel2)}h2{font-size:clamp(30px,4.6vw,50px);line-height:1.1;letter-spacing:-.03em;margin:0 0 18px;max-width:900px}h3{font-size:21px;line-height:1.25;margin:0 0 12px}h4{font-size:16px;margin:0 0 7px}p{margin:0 0 16px}.section-intro{color:var(--sub);max-width:820px;font-size:17px}.small{font-size:13px;color:var(--sub)}.grid{display:grid;gap:14px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{border:1px solid var(--line);background:var(--panel);padding:22px;border-radius:14px;min-width:0}.card p:last-child{margin-bottom:0}.card p{color:var(--sub)}.card .kicker{font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--accent);font-weight:850;margin-bottom:8px}.num{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--accent-dim);color:var(--accent);font-size:13px;font-weight:800;margin-bottom:12px}.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:30px 0}.flowstep{position:relative;border:1px solid var(--line);background:#11100e;padding:17px 13px;border-radius:12px;min-height:123px;text-align:left;color:var(--fg)}.flowstep::after{content:"→";position:absolute;right:-12px;top:40%;z-index:2;color:var(--accent);font-weight:900}.flowstep:last-child::after{content:""}.flowstep strong{display:block;font-size:14px;margin-bottom:5px}.flowstep span{display:block;font-size:12px;line-height:1.45;color:var(--sub)}.flowstep[aria-pressed="true"]{border-color:var(--accent);background:var(--soft)}.detailpanel{margin-top:14px;border:1px solid var(--accent-dim);background:#100e0c;padding:24px;border-radius:14px;min-height:170px}.detailpanel .label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:850}.detailpanel p{color:var(--sub)}.detailpanel .example{padding:13px 15px;margin-top:12px;border-left:2px solid var(--accent);background:var(--soft);color:var(--fg)}.evidence-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:30px}.evidence{display:flex;flex-direction:column;align-items:flex-start;gap:10px;border:0;text-align:left;padding:22px;background:var(--panel);color:var(--fg);min-height:180px}.evidence .tag{font-size:10px;color:var(--accent);letter-spacing:.1em;font-weight:850;text-transform:uppercase}.evidence p{color:var(--sub);font-size:13px;margin:0}.evidence .reveal{display:none;padding-top:10px;border-top:1px dashed var(--line);color:var(--fg)}.evidence[aria-pressed="true"]{background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.evidence[aria-pressed="true"] .reveal{display:block}.status{padding:15px 18px;border-left:2px solid var(--accent);background:#100e0c;color:var(--sub);margin-top:18px;min-height:56px}.status strong{color:var(--fg)}.fourstage{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:28px 0}.fourstage button{border:0;text-align:left;background:var(--panel);color:var(--fg);padding:20px;min-height:150px}.fourstage button[aria-pressed="true"]{background:var(--soft);box-shadow:inset 0 3px var(--accent)}.fourstage button .number{display:block;color:var(--accent);font-size:11px;font-weight:850;letter-spacing:.1em;margin-bottom:10px}.fourstage button span:last-child{display:block;color:var(--sub);font-size:13px;margin-top:7px}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:32px}.control-card{border:1px solid var(--line);background:var(--panel);border-radius:14px;overflow:hidden}.control-head{display:flex;gap:14px;padding:20px 20px 0;align-items:flex-start}.control-head .num{flex:none}.control-head p{font-size:13px;color:var(--sub);margin-bottom:0}.control-body{padding:15px 20px 22px}.control-body p{font-size:14px;color:var(--sub)}.control-body ul{padding-left:19px;margin:10px 0 16px}.control-body li{margin:6px 0;color:var(--sub);font-size:14px}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{padding:13px;background:#11100e;border-radius:10px;border:1px solid var(--line)}.mini strong{font-size:12px;display:block;color:var(--fg);margin-bottom:5px}.mini p{font-size:12px;margin:0}.table-wrap{overflow-x:auto;margin-top:26px}table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:14px 15px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.09em}td{color:var(--sub);font-size:14px}td:first-child{color:var(--fg);font-weight:750}.code{font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0e0d0b;border:1px solid var(--line);color:#f4e7da;border-radius:10px;padding:16px;overflow-wrap:anywhere}.term{color:var(--accent);font-weight:800}.callout-good{border-left:3px solid var(--good);padding:16px 18px;background:rgba(168,194,147,.08);margin:18px 0}.callout-warn{border-left:3px solid var(--bad);padding:16px 18px;background:rgba(225,132,112,.08);margin:18px 0}.steps{counter-reset:step;display:grid;gap:10px;margin-top:25px}.step{counter-increment:step;display:grid;grid-template-columns:46px 1fr;gap:15px;padding:17px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.step::before{content:counter(step,decimal-leading-zero);color:var(--accent);font-weight:900;font-size:13px;padding-top:3px}.step p{color:var(--sub);margin:0;font-size:14px}.step strong{display:block;margin-bottom:5px}.contract{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:28px}.contract details,.glossary details{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:0 17px}.contract summary,.glossary summary{cursor:pointer;padding:17px 25px 17px 0;font-weight:750;position:relative;list-style:none}.contract summary::-webkit-details-marker,.glossary summary::-webkit-details-marker{display:none}.contract summary::after,.glossary summary::after{content:"+";position:absolute;right:0;color:var(--accent);font-size:21px;top:12px}.contract details[open] summary::after,.glossary details[open] summary::after{content:"−"}.contract details p{font-size:14px;color:var(--sub)}.evidence-pill{font-size:12px;color:var(--accent);border-top:1px dashed var(--line);padding-top:12px;margin-top:10px}.quiz{border:1px solid var(--accent-dim);padding:26px;border-radius:16px;background:linear-gradient(150deg,#211c17,#11100e);margin-top:26px}.quiz+.quiz{margin-top:15px}.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:18px}.option{border:1px solid var(--line);border-radius:10px;background:#11100e;padding:14px;text-align:left;color:var(--fg);font-size:14px}.option:hover{border-color:var(--accent)}.option[disabled]{cursor:default;opacity:.8}.option.correct{border-color:var(--good);background:rgba(168,194,147,.12)}.option.incorrect{border-color:var(--bad);background:rgba(225,132,112,.12)}.answer{display:none;margin-top:16px;padding:15px 17px;background:#0e0d0b;border-left:3px solid var(--accent);color:var(--sub)}.answer.show{display:block}.answer strong{color:var(--fg)}.glossary-tools{display:flex;gap:12px;align-items:center;margin:25px 0 16px}.glossary-tools input{width:min(440px,100%);background:#100e0c;border:1px solid var(--line);border-radius:10px;color:var(--fg);padding:13px 15px}.glossary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.glossary details{padding-inline:15px}.glossary summary{font-size:14px}.glossary details p{font-size:13px;color:var(--sub);margin:0 0 16px}.source-list{display:grid;gap:12px;list-style:none;padding:0}.source-list li{padding:15px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}.source-list a{font-weight:750}.source-list p{margin:6px 0 0;color:var(--sub);font-size:13px}.exit{max-width:820px}.exit textarea{display:block;width:100%;min-height:105px;margin:16px 0;padding:14px;background:#100e0c;border:1px solid var(--line);border-radius:10px;color:var(--fg)}.btn{border:1px solid var(--accent-dim);border-radius:999px;background:var(--soft);color:var(--fg);padding:10px 16px;font-weight:750;font-size:13px}.btn:hover{background:rgba(216,135,104,.22)}.footer{padding:35px 0 55px;color:var(--sub);font-size:12px}.footer-inner{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}.footer strong{color:var(--fg)}
+@media(max-width:850px){.nav-inner{align-items:flex-start;padding-top:10px;padding-bottom:8px;flex-direction:column;gap:4px}.navlinks{max-width:100%;width:100%}.hero{padding-top:60px}.promise,.grid.three,.evidence-grid{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.flowstep{min-height:0;padding:14px}.flowstep::after{content:"↓";right:14px;top:auto;bottom:-17px}.flowstep:last-child::after{content:""}.fourstage{grid-template-columns:repeat(2,minmax(0,1fr))}.controls,.grid.two,.contract,.glossary{grid-template-columns:1fr}.section{padding:60px 0}.options{grid-template-columns:1fr}}
+@media(max-width:500px){.wrap{width:min(var(--max),calc(100% - 32px))}.hero h1{font-size:42px}.fourstage{grid-template-columns:1fr}.split{grid-template-columns:1fr}.card{padding:18px}.control-head{padding:18px 18px 0}.control-body{padding:12px 18px 18px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+</style>
+<style>
+footer .lesson-pager {
+  display: flex;
+  width: min(1160px, 100%);
+  margin: 20px auto 0;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+footer .lesson-pager a,
+footer .lesson-pager span.pager-next,
+footer .lesson-pager span:first-child {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--fg);
+  transition: border-color .25s var(--ease), background .25s var(--ease);
+}
+footer .lesson-pager a:hover {
+  border-color: var(--accent);
+  background: #241f1a;
+}
+footer .pager-dir {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+footer .pager-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+footer .lesson-pager .pager-next {
+  text-align: right;
+  align-items: flex-end;
+}
+footer .lesson-pager .is-disabled {
+  opacity: .4;
+  pointer-events: none;
+}
+@media (max-width: 620px) {
+  footer .lesson-pager a,
+  footer .lesson-pager span.pager-next,
+  footer .lesson-pager span:first-child {
+    flex: 1 1 100%;
   }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+  footer .lesson-pager .pager-next {
+    text-align: left;
+    align-items: flex-start;
   }
-  button, input, textarea { font: inherit; }
-  button { min-height: 44px; cursor: pointer; }
-  a { color: inherit; text-decoration: none; }
-  a:hover { color: var(--accent); }
-  ::selection { background: var(--accent); color: #1a1512; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
-  .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-
-  #reading-progress {
-    position: fixed; z-index: 1000; top: 0; left: 0; width: 0; height: 2px;
-    background: var(--accent); box-shadow: 0 0 14px rgba(204, 120, 92, .7);
-  }
-
-  .site-nav {
-    position: fixed; z-index: 900; top: 0; right: 0; left: 0;
-    border-bottom: 1px solid rgba(242, 239, 233, .1);
-    background: rgba(25, 24, 23, .66);
-    backdrop-filter: blur(22px) saturate(140%);
-    -webkit-backdrop-filter: blur(22px) saturate(140%);
-  }
-  .site-nav nav { display: flex; width: min(1240px, 100%); min-height: 58px; margin: 0 auto; padding: 0 28px; align-items: center; justify-content: space-between; gap: 24px; }
-  .brand { flex: 0 0 auto; font-size: 14px; font-weight: 800; letter-spacing: .02em; }
-  .nav-links { display: flex; min-width: 0; gap: 18px; color: var(--sub); font-size: 12px; overflow-x: auto; }
-  .brand, .nav-links a { display: inline-flex; min-height: 44px; align-items: center; }
-  .nav-links a { position: relative; white-space: nowrap; }
-  .nav-links a::after {
-    position: absolute; right: 0; bottom: -7px; left: 0; height: 1px; content: "";
-    background: var(--accent); transform: scaleX(0); transition: transform .25s var(--ease);
-  }
-  .nav-links a:hover::after, .nav-links a[aria-current="location"]::after { transform: scaleX(1); }
-  .nav-links a[aria-current="location"] { color: var(--fg); }
-
-  .cursor-light {
-    position: fixed; z-index: 850; top: 0; left: 0; width: 460px; height: 460px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(204, 120, 92, .32) 0%, rgba(232, 226, 212, .08) 42%, transparent 70%);
-    filter: blur(10px); mix-blend-mode: screen; pointer-events: none;
-    transform: translate3d(-50%, -50%, 0); will-change: transform;
-  }
-
-  .js-enhanced .reveal { opacity: 0; transform: translate3d(0, 24px, 0); }
-  .js-enhanced .reveal.in { opacity: 1; transform: translate3d(0, 0, 0); transition: opacity .7s var(--ease), transform .7s var(--ease); }
-
-  main > section { position: relative; min-height: 60vh; padding: 148px max(7vw, 28px) 120px; border-bottom: 1px solid var(--line); }
-  main > section:nth-child(even) { background: var(--panel); }
-  .section-inner { position: relative; z-index: 2; width: min(1160px, 100%); min-width: 0; margin: 0 auto; }
-  .section-inner > * { min-width: 0; }
-
-  .eyebrow { margin: 0 0 14px; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-  h1, h2, h3, p { margin-top: 0; }
-  h1 { max-width: 980px; margin-bottom: 22px; font-size: clamp(38px, 6.4vw, 78px); line-height: 1.04; }
-  h2 { max-width: 860px; margin-bottom: 20px; font-size: clamp(29px, 4.2vw, 50px); line-height: 1.1; }
-  h3 { margin-bottom: 10px; font-size: clamp(18px, 2vw, 23px); line-height: 1.25; }
-  .lead { max-width: 760px; color: var(--sub); font-size: clamp(16px, 1.4vw, 20px); }
-  .prose { max-width: 780px; }
-  .prose p { margin: 16px 0 0; color: var(--sub); }
-  .prose strong, .signal { color: var(--fg); }
-  .signal { text-decoration-color: var(--accent); text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
-  .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
-  blockquote {
-    max-width: 900px; margin: 38px 0; padding: 2px 0 2px 22px; border-left: 3px solid var(--accent);
-    font-size: clamp(20px, 2.3vw, 30px); font-weight: 750; line-height: 1.32;
-  }
-
-  .next-peek {
-    position: relative; z-index: 4; display: flex; width: min(1160px, calc(100% - max(14vw, 56px)));
-    min-height: 50px; margin: 48px auto -50px; padding: 0 18px; border: 1px solid var(--line);
-    background: rgba(16, 15, 14, .92); align-items: center; justify-content: space-between; gap: 18px;
-    color: var(--sub); font-size: 12px; font-weight: 750; text-transform: uppercase;
-  }
-  .next-peek strong { color: var(--fg); font-size: 13px; }
-
-  /* Flip cards (verbs + review matrix) */
-  .contract-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-top: 46px; background: var(--line); perspective: 1200px; }
-  .contract-card { min-height: 200px; background: transparent; border: 0; padding: 0; color: var(--fg); }
-  .contract-inner { position: relative; min-height: 200px; width: 100%; transition: transform .6s var(--ease); transform-style: preserve-3d; }
-  .contract-card[aria-pressed="true"] .contract-inner { transform: rotateY(180deg); }
-  .contract-face {
-    position: absolute; inset: 0; backface-visibility: hidden; padding: 20px; background: var(--bg); color: var(--fg);
-    display: flex; flex-direction: column; gap: 8px; text-align: left;
-  }
-  main > section:nth-child(even) .contract-face { background: #16140f; }
-  .contract-face strong { color: var(--fg); }
-  .contract-face .idx { color: var(--accent); font-size: 11px; font-weight: 800; }
-  .contract-face p { margin: 0; color: var(--sub); font-size: 13px; }
-  .contract-back { transform: rotateY(180deg); background: var(--accent-soft) !important; }
-  .contract-back strong { color: var(--fg); font-size: 13px; }
-  .contract-back .evi { margin-top: 8px; color: var(--accent); font-size: 12px; font-weight: 700; }
-  .contract-back .cannot { margin-top: 6px; color: var(--bad); font-size: 12px; font-weight: 700; }
-
-  /* Ladder (vertical accordion) */
-  .ladder-list { display: grid; gap: 1px; margin-top: 46px; background: var(--line); }
-  .ladder-rung { display: grid; grid-template-columns: 56px minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 18px 20px; background: var(--bg); border: 0; width: 100%; text-align: left; color: var(--fg); }
-  main > section:nth-child(even) .ladder-rung { background: #16140f; }
-  .ladder-rung .num { color: var(--accent); font-size: 22px; font-weight: 850; }
-  .ladder-rung .claim { font-size: 15px; font-weight: 700; }
-  .ladder-rung .chevron { color: var(--sub); font-size: 13px; transition: transform .25s var(--ease); }
-  .ladder-rung[aria-expanded="true"] .chevron { transform: rotate(90deg); color: var(--accent); }
-  .ladder-rung[aria-expanded="true"] { box-shadow: inset 3px 0 0 var(--accent); background: var(--accent-soft); }
-  .ladder-panel { display: none; padding: 0 20px 22px 94px; background: var(--bg); color: var(--sub); font-size: 14px; }
-  main > section:nth-child(even) .ladder-panel { background: #16140f; }
-  .ladder-panel.is-open { display: block; }
-  .ladder-panel .avoid { display: block; margin-top: 10px; padding: 12px 14px; border-left: 2px solid var(--bad); background: rgba(201,100,79,.08); color: var(--fg); font-size: 13px; }
-
-  /* Lab shell / worksheet / loop strip */
-  .lab-shell { display: grid; width: min(1080px, 100%); margin-top: 48px; padding: 32px; border: 1px solid var(--accent-dim); border-radius: var(--radius); background: linear-gradient(145deg, #1f1c18, #130f0d 72%); box-shadow: 0 30px 80px rgba(0,0,0,.45); gap: 22px; }
-  .lab-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-  .lab-heading p { max-width: 620px; margin: 0; color: var(--sub); }
-  .loop-strip { display: flex; flex-wrap: wrap; gap: 8px; }
-  .loop-strip span { padding: 8px 12px; border: 1px solid var(--line); background: #0f0d0b; color: var(--sub); font-size: 12px; font-weight: 700; }
-  .loop-strip span.is-active { border-color: var(--accent); color: var(--fg); background: var(--accent-soft); }
-  .question-queue { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-  .question-queue li { padding: 14px 16px; border: 1px solid var(--line); background: #0f0d0b; color: var(--sub); display: none; }
-  .question-queue li.is-shown { display: block; color: var(--fg); }
-  .question-queue li strong { color: var(--accent); display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; }
-  .lab-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-  .lab-controls button { padding: 10px 17px; border: 1px solid var(--line); border-radius: 999px; background: #211e1a; color: var(--fg); font-weight: 700; }
-  .lab-controls button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-  .lab-controls button:disabled { cursor: not-allowed; opacity: .45; }
-  .lab-status { min-height: 58px; margin: 0; padding: 16px 18px; border-left: 2px solid var(--accent); background: #0f0d0b; color: var(--sub); }
-  .lab-status strong { color: var(--fg); }
-
-  /* Reference core / controls (safe-action checklist) */
-  .control-stage { display: grid; grid-template-columns: minmax(0, .9fr) minmax(280px, 1.1fr); gap: 42px; margin-top: 50px; align-items: center; }
-  .control-list { display: grid; gap: 12px; }
-  .control-list button {
-    padding: 15px 18px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); text-align: left;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .control-list button span { color: var(--sub); font-size: 13px; }
-  .control-list button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-  .control-core {
-    position: relative; display: grid; width: min(100%, 440px); min-height: 340px; margin: 0 auto; padding: 42px;
-    border: 1px solid var(--accent-dim); border-radius: 50%;
-    background: radial-gradient(circle, rgba(204,120,92,.14), #100f0d 68%);
-    place-content: center; text-align: center; box-shadow: 0 0 90px rgba(204,120,92,.1);
-  }
-  .control-core::before, .control-core::after { position: absolute; border: 1px solid var(--line); border-radius: 50%; content: ""; }
-  .control-core::before { inset: 22px; }
-  .control-core::after { inset: 54px; border-style: dashed; }
-  .control-core > * { position: relative; z-index: 1; }
-  .control-tags { display: flex; flex-wrap: wrap; margin: 18px 0 0; padding: 0; justify-content: center; gap: 8px; list-style: none; }
-  .control-tags li { padding: 5px 9px; border: 1px solid var(--line); color: var(--sub); font-size: 12px; }
-  .control-tags li.is-on { border-color: var(--accent); color: var(--fg); }
-  .control-metrics { display: flex; flex-wrap: wrap; margin-top: 46px; gap: 1px; background: var(--line); }
-  .control-metrics div { flex: 1 1 200px; padding: 18px; background: var(--panel); }
-  .control-metrics output { display: block; color: var(--fg); font-size: 26px; font-weight: 850; }
-  .control-metrics span { color: var(--sub); font-size: 12px; text-transform: uppercase; }
-
-  /* Worksheet */
-  .worksheet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-  .worksheet-field { display: grid; gap: 6px; }
-  .worksheet-field label { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); }
-  .worksheet-field input { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px; background: #0f0d0b; color: var(--fg); }
-
-  /* Evidence board (exit assessment) */
-  .evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-top: 44px; background: var(--line); }
-  .evidence-card {
-    min-height: 168px; padding: 24px; background: var(--bg); text-align: left; color: var(--fg);
-    display: flex; flex-direction: column; gap: 10px; border: 0; width: 100%;
-  }
-  main > section:nth-child(even) .evidence-card { background: #16140f; }
-  .evidence-card .tag { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-  .evidence-card p { margin: 0; color: var(--sub); font-size: 14px; }
-  .evidence-card[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
-  .evidence-card .reveal-note { display: none; margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--fg); font-size: 13px; }
-  .evidence-card[aria-pressed="true"] .reveal-note { display: block; }
-  .evidence-status { margin-top: 28px; }
-
-  /* Takeaway list */
-  .takeaway-list { display: grid; gap: 1px; margin-top: 40px; background: var(--line); grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .takeaway-list li { list-style: none; min-height: 90px; padding: 20px 22px; background: var(--bg); color: var(--sub); font-size: 15px; }
-  main > section:nth-child(even) .takeaway-list li { background: #16140f; }
-  .takeaway-list li strong { color: var(--fg); }
-
-  .ledger-wrap { min-width: 0; margin-top: 50px; }
-  table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
-  th, td { padding: 16px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--accent); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
-  td { color: var(--sub); }
-  td:last-child { color: var(--fg); font-weight: 700; }
-  .sources { margin-top: 56px; padding-top: 34px; border-top: 1px solid var(--line); }
-  .sources ul { display: grid; gap: 12px; padding: 0; list-style: none; }
-  .sources a { color: var(--sub); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
-
-  footer { padding: 40px max(7vw, 28px) 70px; color: var(--sub); font-size: 13px; }
-  .footer-inner { display: flex; width: min(1160px, 100%); margin: 0 auto; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
-  .lesson-pager { display: flex; width: min(1160px, 100%); margin: 20px auto 0; gap: 14px; flex-wrap: wrap; }
-  .lesson-pager a, .lesson-pager span.pager-next, .lesson-pager span:first-child {
-    flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; padding: 16px 20px;
-    border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--fg);
-    transition: border-color .25s var(--ease), background .25s var(--ease);
-  }
-  .lesson-pager a:hover { border-color: var(--accent); background: #241f1a; }
-  .pager-dir { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
-  .pager-title { font-size: 14px; font-weight: 700; }
-  .lesson-pager .pager-next { text-align: right; align-items: flex-end; }
-  .lesson-pager .is-disabled { opacity: .4; pointer-events: none; }
-  @media (max-width: 620px) {
-    .lesson-pager a, .lesson-pager span.pager-next, .lesson-pager span:first-child { flex: 1 1 100%; }
-    .lesson-pager .pager-next { text-align: left; align-items: flex-start; }
-  }
-
-  @media (max-width: 1040px) {
-    .nav-links { max-width: 70vw; }
-    .control-stage { grid-template-columns: minmax(0,1fr); }
-    .evidence-grid { grid-template-columns: minmax(0,1fr); }
-    .contract-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .worksheet-grid { grid-template-columns: minmax(0,1fr); }
-  }
-  @media (max-width: 760px) {
-    main > section { padding: 140px 22px 92px; }
-    .evidence-grid, .contract-grid, .takeaway-list { grid-template-columns: minmax(0,1fr); }
-    .next-peek { width: calc(100% - 44px); margin: 40px auto -40px; }
-    .ladder-rung { grid-template-columns: 36px minmax(0,1fr) auto; }
-    .ladder-panel { padding-left: 20px; }
-    table, thead, tbody, tr, th, td { display: block; }
-    table { min-width: 0; }
-    thead { display: none; }
-    tr { padding: 14px 0; border-bottom: 1px solid var(--line); }
-    td { display: grid; grid-template-columns: minmax(0,.7fr) minmax(0,1.3fr); gap: 12px; padding: 6px 0; border: 0; }
-    td::before { color: var(--accent); content: attr(data-label); font-size: 11px; font-weight: 800; text-transform: uppercase; }
-  }
-  @media (pointer: coarse) { button, a { cursor: default; } .cursor-light { display: none; } }
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-    .js-enhanced .reveal { opacity: 1; transform: none; }
-    .cursor-light { display: none; }
-  }
+}
+</style>
+<style>
+.worksheet{margin-top:22px;border-color:var(--accent-dim)}
+.worksheet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.worksheet-field{display:grid;gap:6px;min-width:0}
+.worksheet-field label{font-size:11px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:var(--sub)}
+.worksheet-field input{width:100%;min-width:0;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--fg)}
+.worksheet-field input::placeholder{color:var(--muted)}
+.worksheet-actions{display:flex;gap:10px;margin-top:18px}
+.code.pre{white-space:pre-wrap}
+@media(max-width:850px){.worksheet-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-  <div id="reading-progress" aria-hidden="true"></div>
-  <header class="site-nav">
-    <nav aria-label="Lesson sections">
-      <a class="brand" href="#mystery">GRO·L03</a>
-      <div class="nav-links">
-        <a href="#mystery">Mystery</a>
-        <a href="#verbs">Verbs</a>
-        <a href="#ladder">State Ladder</a>
-        <a href="#loop">Diagnostic Loop</a>
-        <a href="#safe-action">Safe Action</a>
-        <a href="#review">AI Review</a>
-        <a href="#template">Incident Note</a>
-        <a href="#exit">Exit Check</a>
-        <a href="#takeaways">Takeaways</a>
-        <a href="#sources">Sources</a>
-      </div>
-    </nav>
-  </header>
-
-  <main id="investigation" tabindex="-1">
-
-    <section id="mystery">
-      <div class="section-inner">
-        <p class="eyebrow">GRO-L03 · Evidence-First Operations</p>
-        <h1>"Something is broken."<br>That is not yet a <span class="signal">root cause.</span></h1>
-        <p class="lead">An incident investigation becomes unreliable the moment a guess silently turns into a "fact." This lesson gives every step in between a name, so uncertainty stays visible instead of being quietly erased.</p>
-        <blockquote>How do we move from "something is broken" to a justified repair — without guessing, causing avoidable disruption, or declaring success too early?</blockquote>
-        <p class="prose">Not every failure needs a formal postmortem. The same discipline scales from a local lab to a production incident: make uncertainty visible, and don't invent certainty after the fact.</p>
-      </div>
-      <a class="next-peek" href="#verbs"><span>Next</span><strong>Eight verbs people quietly collapse into one ↓</strong></a>
-    </section>
-
-    <section id="verbs">
-      <div class="section-inner">
-        <p class="eyebrow">Observe, Infer, and Assume Are Different Verbs</p>
-        <h2>Eight words, eight different claims.</h2>
-        <p class="lead">Click a card to flip it and see the worked example for each term.</p>
-        <div id="verb-grid" class="contract-grid" role="group" aria-label="Eight investigation verbs, click to flip">
-          <button class="contract-card" type="button" aria-pressed="false" data-verb="0"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">01</span><strong>Observation</strong><p>A directly recorded signal with time and scope.</p></div>
-            <div class="contract-face contract-back"><strong>"At 10:14:07 the browser request to http://127.0.0.1:8000/api/status failed with a connection error."</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-verb="1"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">02</span><strong>Inference</strong><p>A conclusion supported by one or more observations.</p></div>
-            <div class="contract-face contract-back"><strong>"The failure appears to be before a valid HTTP response was received."</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-verb="2"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">03</span><strong>Hypothesis</strong><p>A testable explanation.</p></div>
-            <div class="contract-face contract-back"><strong>"The API is not listening on port 8000."</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-verb="3"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">04</span><strong>Test</strong><p>An action chosen to distinguish hypotheses.</p></div>
-            <div class="contract-face contract-back"><strong>curl -i http://127.0.0.1:8000/api/status, while checking the process terminal.</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-verb="4"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">05</span><strong>Root cause</strong><p>The causal condition the evidence demonstrates — in the investigated scope.</p></div>
-            <div class="contract-face contract-back"><strong>Caution:</strong> one failed setting is not always the full organizational root cause.</div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-verb="5"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">06</span><strong>Fix</strong><p>The change that removes or mitigates the demonstrated cause.</p></div>
-            <div class="contract-face contract-back"><strong>Scoped to exactly what the evidence demonstrated — not a guess at a broader problem.</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-verb="6"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">07</span><strong>Verification</strong><p>Evidence the expected behavior is restored, with no known regression.</p></div>
-            <div class="contract-face contract-back"><strong>Re-run the exact check that originally failed, plus a check for anything the fix could have broken.</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-verb="7"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">08</span><strong>Prevention</strong><p>A change that reduces recurrence or impact.</p></div>
-            <div class="contract-face contract-back"><strong>A test, config validator, monitor, or documented ownership change — never just "be more careful."</strong></div>
-          </div></button>
-        </div>
-        <p id="verb-status" class="lab-status" role="status" aria-live="polite" style="margin-top:28px;"><strong>0 of 8 reviewed.</strong> Flip every card — these words are not interchangeable.</p>
-      </div>
-      <a class="next-peek" href="#ladder"><span>Next</span><strong>The system-state ladder ↓</strong></a>
-    </section>
-
-    <section id="ladder">
-      <div class="section-inner">
-        <p class="eyebrow">The System-State Ladder</p>
-        <h2>Evidence at one rung does not prove the rung above it.</h2>
-        <p class="lead">Click a rung to expand its evidence and the false conclusion it tempts people into.</p>
-        <div id="ladder-list" class="ladder-list" role="group" aria-label="Seven-rung system-state ladder">
-          <div><button class="ladder-rung" type="button" data-rung="0" aria-expanded="false"><span class="num">1</span><span class="claim">Artifact present — required code/config exists</span><span class="chevron">▸</span></button>
-            <div class="ladder-panel" data-panel="0"><strong>Evidence:</strong> file diff, commit, artifact registry metadata.<span class="avoid">False conclusion to avoid: "The file exists, so it works."</span></div></div>
-          <div><button class="ladder-rung" type="button" data-rung="1" aria-expanded="false"><span class="num">2</span><span class="claim">Process started — the runtime process is alive</span><span class="chevron">▸</span></button>
-            <div class="ladder-panel" data-panel="1"><strong>Evidence:</strong> process output, process table, container status.<span class="avoid">False conclusion to avoid: "The process runs, so the route is reachable."</span></div></div>
-          <div><button class="ladder-rung" type="button" data-rung="2" aria-expanded="false"><span class="num">3</span><span class="claim">Listener reachable — a caller can connect to host/port</span><span class="chevron">▸</span></button>
-            <div class="ladder-panel" data-panel="2"><strong>Evidence:</strong> TCP connection, direct HTTP check.<span class="avoid">False conclusion to avoid: "The port is open, so correct behavior is served."</span></div></div>
-          <div><button class="ladder-rung" type="button" data-rung="3" aria-expanded="false"><span class="num">4</span><span class="claim">Route responds — requested method/path returns a response</span><span class="chevron">▸</span></button>
-            <div class="ladder-panel" data-panel="3"><strong>Evidence:</strong> curl -i, API test, response body.<span class="avoid">False conclusion to avoid: "The route returns 200, so every response is semantically correct."</span></div></div>
-          <div><button class="ladder-rung" type="button" data-rung="4" aria-expanded="false"><span class="num">5</span><span class="claim">Contract holds — response matches documented expectations</span><span class="chevron">▸</span></button>
-            <div class="ladder-panel" data-panel="4"><strong>Evidence:</strong> tests for status, schema, validation, error cases.<span class="avoid">False conclusion to avoid: "The API contract holds, so the browser can read it."</span></div></div>
-          <div><button class="ladder-rung" type="button" data-rung="5" aria-expanded="false"><span class="num">6</span><span class="claim">End-to-end path works — the real client can complete the path</span><span class="chevron">▸</span></button>
-            <div class="ladder-panel" data-panel="5"><strong>Evidence:</strong> browser Network record + rendered UI state.<span class="avoid">False conclusion to avoid: "The UI works once, so capacity and reliability are adequate."</span></div></div>
-          <div><button class="ladder-rung" type="button" data-rung="6" aria-expanded="false"><span class="num">7</span><span class="claim">User outcome holds under required conditions</span><span class="chevron">▸</span></button>
-            <div class="ladder-panel" data-panel="6"><strong>Evidence:</strong> acceptance test and product-level evidence.<span class="avoid">False conclusion to avoid: "One happy-path test proves production readiness."</span></div></div>
-        </div>
-        <p class="prose">This ladder is a teaching model, not a formal standard. A real production-readiness claim may need additional rungs for authentication, persistence, performance, resilience, accessibility, and business invariants.</p>
-      </div>
-      <a class="next-peek" href="#loop"><span>Next</span><strong>One hypothesis at a time ↓</strong></a>
-    </section>
-
-    <section id="loop">
-      <div class="section-inner">
-        <p class="eyebrow">Diagnostic Loop · One Hypothesis At A Time</p>
-        <h2>"Something is wrong with networking" is not falsifiable. This is.</h2>
-        <p class="lead">The abstract loop below always runs in the same order. Step through a worked case to see it applied to a real symptom.</p>
-        <div class="loop-strip" id="loop-strip" aria-label="Nine-step diagnostic loop">
-          <span data-loop="0">Symptom</span><span data-loop="1">Locate boundary</span><span data-loop="2">Observe</span><span data-loop="3">Form hypothesis</span><span data-loop="4">Choose test</span><span data-loop="5">Compare result</span><span data-loop="6">Identify cause</span><span data-loop="7">Smallest correction</span><span data-loop="8">Verify + record</span>
-        </div>
-        <article class="lab-shell" aria-labelledby="loop-title">
-          <div class="lab-heading"><div><p class="eyebrow">Worked Case</p><h3 id="loop-title">The React page loads, the API status card fails</h3></div><p>Reveal each step in order and watch the matching stage light up above.</p></div>
-          <ul id="loop-queue" class="question-queue" aria-live="polite">
-            <li data-q="0"><strong>Observation 1</strong>The browser Network tab shows the request is sent to http://127.0.0.1:8001/api/status.</li>
-            <li data-q="1"><strong>Observation 2</strong>curl -i http://127.0.0.1:8000/api/status returns the expected body.</li>
-            <li data-q="2"><strong>Hypothesis</strong>The frontend is configured with the wrong API port.</li>
-            <li data-q="3"><strong>Discriminating test</strong>Inspect the configured API base URL and compare it with the URL in the Network tab and the known API listener.</li>
-            <li data-q="4"><strong>Result</strong>Frontend config points to port 8001; backend logs show no matching request.</li>
-            <li data-q="5"><strong>Root cause (bounded)</strong>For this run, the frontend requested the wrong port, so the intended API route was never targeted.</li>
-            <li data-q="6"><strong>Fix</strong>Correct the development base URL to port 8000 and restart/rebuild the frontend as required by how the config is loaded.</li>
-            <li data-q="7"><strong>Verification</strong>Confirm the browser request now targets port 8000, inspect the response and Access-Control-Allow-Origin, and verify the UI displays the body.</li>
-            <li data-q="8"><strong>Prevention</strong>Add a startup/config check or browser integration test asserting the deployed frontend calls the expected API path. Keep the URL in documented environment config; never place a secret in a public client bundle.</li>
-          </ul>
-          <div id="loop-controls" class="lab-controls"><button id="loop-next" type="button">Reveal next step</button><button id="loop-reset" type="button">Reset</button></div>
-          <p id="loop-status" class="lab-status" role="status" aria-live="polite"><strong>0 of 9 revealed.</strong> The evidence justifies a narrow conclusion about this failure — not a claim that all networking is healthy.</p>
-        </article>
-      </div>
-      <a class="next-peek" href="#safe-action"><span>Next</span><strong>Choosing the smallest safe action ↓</strong></a>
-    </section>
-
-    <section id="safe-action">
-      <div class="section-inner">
-        <p class="eyebrow">Choose The Smallest Safe Next Action</p>
-        <h2>Maximize information. Minimize risk.</h2>
-        <p class="lead">Before running any diagnostic action, attach each question to the decision you're about to make.</p>
-        <div class="control-stage">
-          <div id="control-list" class="control-list" role="group" aria-label="Attach each question before acting">
-            <button type="button" data-control="Plausible" aria-pressed="false">What hypotheses are still plausible? <span>Narrow the field before acting.</span></button>
-            <button type="button" data-control="Expected" aria-pressed="false">What result would I expect if each were true? <span>Make each hypothesis falsifiable.</span></button>
-            <button type="button" data-control="Distinguish" aria-pressed="false">Which observation distinguishes them? <span>Pick a test that actually discriminates.</span></button>
-            <button type="button" data-control="State change" aria-pressed="false">Does this action change system state? <span>Prefer read-only until the cause narrows.</span></button>
-            <button type="button" data-control="Exposure" aria-pressed="false">Could it expose data, destroy work, or widen access? <span>Consider cost and blast radius.</span></button>
-            <button type="button" data-control="Rollback" aria-pressed="false">Is there a safe rollback or cleanup step? <span>Never run an action you can't undo.</span></button>
-          </div>
-          <div id="control-core" class="control-core" role="img" aria-label="Next action with zero of six questions attached">
-            <div>
-              <p class="eyebrow">Next action</p>
-              <h3>Attach each question</h3>
-              <ul id="control-tags" class="control-tags" aria-hidden="true"><li>Plausible</li><li>Expected</li><li>Distinguish</li><li>State change</li><li>Exposure</li><li>Rollback</li></ul>
-            </div>
-          </div>
-        </div>
-        <div class="control-metrics" aria-label="Attachment counts">
-          <div><output id="control-count">0 / 6</output><span>questions attached</span></div>
-          <div><output id="control-remark">Read-only first</output><span>default posture</span></div>
-        </div>
-        <p class="prose">If restarting a process temporarily restores service, that can be a valid mitigation under time pressure — it does not establish the cause. Prefer <strong>mitigation now, cause investigation afterward</strong> over calling "restart" a root cause.</p>
-      </div>
-      <a class="next-peek" href="#review"><span>Next</span><strong>Reviewing AI-generated operational artifacts ↓</strong></a>
-    </section>
-
-    <section id="review">
-      <div class="section-inner">
-        <p class="eyebrow">Review AI-Generated Artifacts As Executable Decisions</p>
-        <h2>Valid YAML is one gate. It is not the only gate.</h2>
-        <p class="lead">A Dockerfile, manifest, workflow, or script is a proposal. Flip each dimension to see the question a careful reviewer asks.</p>
-        <div id="review-grid" class="contract-grid" role="group" aria-label="Eight review dimensions, click to flip">
-          <button class="contract-card" type="button" aria-pressed="false" data-r="0"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">01</span><strong>Intent</strong></div>
-            <div class="contract-face contract-back"><strong>Does this change solve the requirement that was requested?</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-r="1"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">02</span><strong>Context</strong></div>
-            <div class="contract-face contract-back"><strong>Does it match the repo layout, environment, versions, ports, and deployment topology?</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-r="2"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">03</span><strong>Permissions</strong></div>
-            <div class="contract-face contract-back"><strong>Does it ask only for the authority required? Are workflow/role permissions scoped?</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-r="3"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">04</span><strong>Secrets/data</strong></div>
-            <div class="contract-face contract-back"><strong>Could any key, token, personal data, or internal URL leak into source, logs, images, or client bundles?</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-r="4"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">05</span><strong>Failure behavior</strong></div>
-            <div class="contract-face contract-back"><strong>What happens on timeout, unavailable dependency, invalid config, non-2xx, restart, or partial failure?</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-r="5"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">06</span><strong>Observability</strong></div>
-            <div class="contract-face contract-back"><strong>What signal shows success, what signal exposes failure — and is it visible to the on-call operator?</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-r="6"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">07</span><strong>Reversibility</strong></div>
-            <div class="contract-face contract-back"><strong>Can the change be undone? What side effect would survive a rollback?</strong></div>
-          </div></button>
-          <button class="contract-card" type="button" aria-pressed="false" data-r="7"><div class="contract-inner">
-            <div class="contract-face"><span class="idx">08</span><strong>Verification</strong></div>
-            <div class="contract-face contract-back"><strong>What exact evidence proves the relevant outcome after the change ships?</strong></div>
-          </div></button>
-        </div>
-        <p id="review-status" class="lab-status" role="status" aria-live="polite" style="margin-top:28px;"><strong>0 of 8 reviewed.</strong> Syntax validity passes none of these questions by itself.</p>
-      </div>
-      <a class="next-peek" href="#template"><span>Next</span><strong>A real incident note template ↓</strong></a>
-    </section>
-
-    <section id="template">
-      <div class="section-inner">
-        <p class="eyebrow">Incident Note Template</p>
-        <h2>Fill it without adding assumptions.</h2>
-        <p class="lead">Type into the fields as you work a real or practice incident. Nothing here is graded or sent anywhere.</p>
-        <article class="lab-shell" aria-labelledby="template-title">
-          <div class="lab-heading"><div><p class="eyebrow">Incident Note</p><h3 id="template-title">"Tests not executed" is deliberately on this list</h3></div><p>It stops absence of evidence from silently becoming evidence of success.</p></div>
-          <div id="worksheet-grid" class="worksheet-grid">
-            <div class="worksheet-field"><label for="t1">Incident / lab ID</label><input id="t1" type="text"></div>
-            <div class="worksheet-field"><label for="t2">Time window</label><input id="t2" type="text"></div>
-            <div class="worksheet-field"><label for="t3">User-visible symptom</label><input id="t3" type="text"></div>
-            <div class="worksheet-field"><label for="t4">Expected behavior</label><input id="t4" type="text"></div>
-            <div class="worksheet-field"><label for="t5">Actual behavior</label><input id="t5" type="text"></div>
-            <div class="worksheet-field"><label for="t6">Impact and scope</label><input id="t6" type="text"></div>
-            <div class="worksheet-field"><label for="t7">Relevant revision / artifact version</label><input id="t7" type="text"></div>
-            <div class="worksheet-field"><label for="t8">Direct observations (source + timestamp)</label><input id="t8" type="text"></div>
-            <div class="worksheet-field"><label for="t9">Hypotheses considered</label><input id="t9" type="text"></div>
-            <div class="worksheet-field"><label for="t10">Tests performed and results</label><input id="t10" type="text"></div>
-            <div class="worksheet-field"><label for="t11">Root cause (bounded to evidence)</label><input id="t11" type="text"></div>
-            <div class="worksheet-field"><label for="t12">Mitigation / correction</label><input id="t12" type="text"></div>
-            <div class="worksheet-field"><label for="t13">Verification evidence</label><input id="t13" type="text"></div>
-            <div class="worksheet-field"><label for="t14">Known remaining uncertainty</label><input id="t14" type="text"></div>
-            <div class="worksheet-field"><label for="t15">Prevention action</label><input id="t15" type="text"></div>
-            <div class="worksheet-field"><label for="t16">Cleanup completed</label><input id="t16" type="text"></div>
-            <div class="worksheet-field"><label for="t17">Tests not executed</label><input id="t17" type="text"></div>
-          </div>
-          <div class="lab-controls"><button id="worksheet-clear" type="button">Clear note</button></div>
-          <p id="worksheet-status" class="lab-status" role="status" aria-live="polite"><strong>0 of 17 fields filled.</strong></p>
-        </article>
-      </div>
-      <a class="next-peek" href="#exit"><span>Next</span><strong>Exit assessment ↓</strong></a>
-    </section>
-
-    <section id="exit">
-      <div class="section-inner">
-        <p class="eyebrow">Exit Assessment</p>
-        <h2>Four questions. Click each to check your answer.</h2>
-        <div id="exit-board" class="evidence-grid" role="group" aria-label="Four exit assessment questions; click each to reveal the strong answer">
-          <button class="evidence-card" type="button" data-evidence="q1" aria-pressed="false"><span class="tag">Question 1</span><strong>A CLI command returns exit code 0 after applying configuration. Is the service healthy?</strong><span class="reveal-note">No. Exit code 0 proves the command itself completed without error — it is rung 1-2 evidence at most, not a listener, route, contract, or user-outcome check.</span></button>
-          <button class="evidence-card" type="button" data-evidence="q2" aria-pressed="false"><span class="tag">Question 2</span><strong>curl to the FastAPI endpoint succeeds, but browser fetch fails with a CORS message. Does that prove the API is down?</strong><span class="reveal-note">No. CORS is a browser-enforced read policy, not server availability. The server can be healthy and reachable while the browser is still blocked from reading the response.</span></button>
-          <button class="evidence-card" type="button" data-evidence="q3" aria-pressed="false"><span class="tag">Question 3</span><strong>The API process is restarted and the UI now works. Can the incident be closed with "resolved by restart" as root cause?</strong><span class="reveal-note">No. A restart is a mitigation, not a cause. The process might have exited from invalid config, a crash on request, resource pressure, or a missing dependency — each demands separate evidence.</span></button>
-          <button class="evidence-card" type="button" data-evidence="q4" aria-pressed="false"><span class="tag">Question 4</span><strong>An AI-created workflow asks for broad write permission, uses correct YAML, and passes linting. Should it merge?</strong><span class="reveal-note">No, not on that basis alone. Syntax validity and lint passing are only one review dimension — permissions, secrets, failure behavior, observability, reversibility, and verification all still need an answer.</span></button>
-        </div>
-        <p id="exit-status" class="lab-status evidence-status" role="status" aria-live="polite"><strong>0 of 4 revealed.</strong> Click each question to check your reasoning against the strong answer.</p>
-      </div>
-      <a class="next-peek" href="#takeaways"><span>Next</span><strong>Takeaways and sources ↓</strong></a>
-    </section>
-
-    <section id="takeaways">
-      <div class="section-inner">
-        <p class="eyebrow">Key Takeaways</p>
-        <h2>Uncertainty stays visible. Certainty is earned.</h2>
-        <ul class="takeaway-list">
-          <li><strong>Eight different verbs.</strong> Observation, inference, hypothesis, test, root cause, fix, verification, and prevention are not interchangeable.</li>
-          <li><strong>The ladder doesn't skip rungs.</strong> Evidence one rung up does not establish the rung above it.</li>
-          <li><strong>Falsifiable, not vague.</strong> "Something is wrong with networking" can't be tested; a specific port mismatch can.</li>
-          <li><strong>Prefer read-only first.</strong> Maximize information, minimize risk, before mutating system state.</li>
-          <li><strong>Syntax valid ≠ safe to merge.</strong> Review AI-generated artifacts against intent, context, permissions, secrets, failure behavior, observability, reversibility, and verification.</li>
-          <li><strong>Mitigation ≠ root cause.</strong> A restart that restores service still needs a cause investigation afterward.</li>
-        </ul>
-      </div>
-      <a class="next-peek" href="#sources"><span>Next</span><strong>Sources ↓</strong></a>
-    </section>
-
-    <section id="sources">
-      <div class="section-inner">
-        <p class="eyebrow">Sources</p>
-        <h2>What this lesson draws on.</h2>
-        <div class="sources">
-          <ul>
-            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS">MDN — CORS guide</a></li>
-            <li><a href="https://fastapi.tiangolo.com/tutorial/cors/">FastAPI — CORS tutorial</a></li>
-            <li><a href="https://vite.dev/guide/env-and-mode">Vite — Environment variables and modes</a></li>
-            <li><a href="https://docs.github.com/en/actions/reference/security/secure-use">GitHub Docs — Secure use reference for GitHub Actions</a></li>
-            <li><a href="https://sre.google/workbook/postmortem-culture/">Google SRE Workbook — Postmortem Culture</a></li>
-            <li><a href="https://sre.google/sre-book/monitoring-distributed-systems/">Google SRE — Monitoring Distributed Systems</a></li>
-          </ul>
-        </div>
-        <div class="ledger-wrap">
-          <h3>System-State Ladder Reference</h3>
-          <table>
-            <thead><tr><th>Rung</th><th>Claim</th><th>Evidence</th></tr></thead>
-            <tbody>
-              <tr><td data-label="Rung">1</td><td data-label="Claim">Artifact present</td><td data-label="Evidence">File diff, commit, registry metadata</td></tr>
-              <tr><td data-label="Rung">2</td><td data-label="Claim">Process started</td><td data-label="Evidence">Process output, process table, container status</td></tr>
-              <tr><td data-label="Rung">3</td><td data-label="Claim">Listener reachable</td><td data-label="Evidence">TCP connection, direct HTTP check</td></tr>
-              <tr><td data-label="Rung">4</td><td data-label="Claim">Route responds</td><td data-label="Evidence">curl -i, API test, response body</td></tr>
-              <tr><td data-label="Rung">5</td><td data-label="Claim">Contract holds</td><td data-label="Evidence">Status, schema, validation, error-case tests</td></tr>
-              <tr><td data-label="Rung">6</td><td data-label="Claim">End-to-end path works</td><td data-label="Evidence">Browser Network record + rendered UI state</td></tr>
-              <tr><td data-label="Rung">7</td><td data-label="Claim">User outcome holds</td><td data-label="Evidence">Acceptance test and product-level evidence</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="footer-inner"><span>GRO-L03 · Evidence-First Operations</span><span>Week 1 · GroundOps</span></div>
-    <nav class="lesson-pager" aria-label="Lesson navigation">
-      <a href="GRO-L02-trace-the-full-stack-request.html"><span class="pager-dir">&larr; Previous</span><span class="pager-title">GRO-L02 · Trace the Full-Stack Request</span></a>
-      <a class="pager-next" href="GIT-L01-what-does-a-git-object-id-identify.html"><span class="pager-dir">Next &rarr;</span><span class="pager-title">GIT-L01 · What Does a Git Object ID Identify?</span></a>
-    </nav>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-  <script>
-    /* ---------- Verb flip cards ---------- */
-    document.querySelectorAll('#verb-grid .contract-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        card.setAttribute('aria-pressed', String(card.getAttribute('aria-pressed') !== 'true'));
-        card.dataset.everOpened = '1';
-        const seen = document.querySelectorAll('#verb-grid .contract-card[data-ever-opened="1"]').length;
-        document.querySelector('#verb-status').innerHTML = seen === 8
-          ? '<strong>8 of 8 reviewed.</strong> Keep these labels separate in every incident note you write.'
-          : `<strong>${seen} of 8 reviewed.</strong> Flip every card — these words are not interchangeable.`;
-      });
-    });
-
-    /* ---------- Ladder accordion ---------- */
-    document.querySelectorAll('#ladder-list .ladder-rung').forEach((rung) => {
-      rung.addEventListener('click', () => {
-        const panel = document.querySelector(`.ladder-panel[data-panel="${rung.dataset.rung}"]`);
-        const isOpen = rung.getAttribute('aria-expanded') === 'true';
-        rung.setAttribute('aria-expanded', String(!isOpen));
-        panel.classList.toggle('is-open', !isOpen);
-      });
-    });
-
-    /* ---------- Diagnostic loop reveal ---------- */
-    let loopRevealed = 0;
-    const totalLoop = document.querySelectorAll('#loop-queue li').length;
-    function renderLoop() {
-      document.querySelectorAll('#loop-queue li').forEach((li) => li.classList.toggle('is-shown', Number(li.dataset.q) < loopRevealed));
-      document.querySelectorAll('#loop-strip span').forEach((span) => span.classList.toggle('is-active', Number(span.dataset.loop) < loopRevealed));
-      document.querySelector('#loop-next').disabled = loopRevealed >= totalLoop;
-      document.querySelector('#loop-status').innerHTML = loopRevealed >= totalLoop
-        ? '<strong>All 9 revealed.</strong> The evidence justifies a narrow conclusion about this failure — not a claim that all networking is healthy.'
-        : `<strong>${loopRevealed} of 9 revealed.</strong> Each step narrows the hypothesis before the next one runs.`;
-    }
-    document.querySelector('#loop-next').addEventListener('click', () => { loopRevealed = Math.min(totalLoop, loopRevealed + 1); renderLoop(); });
-    document.querySelector('#loop-reset').addEventListener('click', () => { loopRevealed = 0; renderLoop(); });
-    renderLoop();
-
-    /* ---------- Safe-action controls / reference core ---------- */
-    const attachedControls = new Set();
-    function renderControls() {
-      document.querySelectorAll('#control-list button').forEach((btn) => btn.setAttribute('aria-pressed', String(attachedControls.has(btn.dataset.control))));
-      document.querySelectorAll('#control-tags li').forEach((li) => li.classList.toggle('is-on', attachedControls.has(li.textContent)));
-      document.querySelector('#control-count').textContent = `${attachedControls.size} / 6`;
-      document.querySelector('#control-core').setAttribute('aria-label', `Next action with ${attachedControls.size} of six questions attached`);
-      document.querySelector('#control-core h3').textContent = attachedControls.size === 6 ? 'All six questions attached' : 'Attach each question';
-    }
-    document.querySelectorAll('#control-list button').forEach((btn) => btn.addEventListener('click', () => {
-      attachedControls.has(btn.dataset.control) ? attachedControls.delete(btn.dataset.control) : attachedControls.add(btn.dataset.control);
-      renderControls();
-    }));
-    renderControls();
-
-    /* ---------- Review matrix flip cards ---------- */
-    document.querySelectorAll('#review-grid .contract-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        card.setAttribute('aria-pressed', String(card.getAttribute('aria-pressed') !== 'true'));
-        card.dataset.everOpened = '1';
-        const seen = document.querySelectorAll('#review-grid .contract-card[data-ever-opened="1"]').length;
-        document.querySelector('#review-status').innerHTML = seen === 8
-          ? '<strong>8 of 8 reviewed.</strong> Syntax validity passed none of these questions by itself.'
-          : `<strong>${seen} of 8 reviewed.</strong> Syntax validity passes none of these questions by itself.`;
-      });
-    });
-
-    /* ---------- Incident note worksheet ---------- */
-    const worksheetInputs = [...document.querySelectorAll('#worksheet-grid input')];
-    function renderWorksheet() {
-      const filled = worksheetInputs.filter((i) => i.value.trim().length > 0).length;
-      document.querySelector('#worksheet-status').innerHTML = filled === worksheetInputs.length
-        ? '<strong>17 of 17 fields filled.</strong> Leaving "tests not executed" blank is itself a claim — make sure it is true.'
-        : `<strong>${filled} of ${worksheetInputs.length} fields filled.</strong>`;
-    }
-    worksheetInputs.forEach((input) => input.addEventListener('input', renderWorksheet));
-    document.querySelector('#worksheet-clear').addEventListener('click', () => { worksheetInputs.forEach((i) => i.value = ''); renderWorksheet(); });
-    renderWorksheet();
-
-    /* ---------- Exit assessment board ---------- */
-    document.querySelectorAll('#exit-board .evidence-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        const pressed = card.getAttribute('aria-pressed') === 'true';
-        card.setAttribute('aria-pressed', String(!pressed));
-        const openCount = document.querySelectorAll('#exit-board .evidence-card[aria-pressed="true"]').length;
-        document.querySelector('#exit-status').innerHTML = openCount === 4
-          ? '<strong>All four revealed.</strong> Every one of these is "no" for the same reason: the evidence given supports a narrower claim than the one being asserted.'
-          : `<strong>${openCount} of 4 revealed.</strong> Click each question to check your reasoning against the strong answer.`;
-      });
-    });
-
-    /* ---------- Reading progress + active nav ---------- */
-    const progress = document.querySelector('#reading-progress');
-    const navLinks = [...document.querySelectorAll('.nav-links a[href^="#"]')];
-    const navTargets = navLinks.map((link) => document.querySelector(link.hash)).filter(Boolean);
-    function setCurrentSection(id) {
-      navLinks.forEach((link) => link.hash === `#${id}` ? link.setAttribute('aria-current', 'location') : link.removeAttribute('aria-current'));
-    }
-    function updateProgress() {
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-      const depth = scrollable <= 0 ? 1 : Math.min(1, Math.max(0, window.scrollY / scrollable));
-      progress.style.width = `${depth * 100}%`;
-      const line = window.scrollY + window.innerHeight * .32;
-      const active = navTargets.filter((s) => s.offsetTop <= line).at(-1) || navTargets[0];
-      setCurrentSection(active.id);
-    }
-    setCurrentSection(navTargets[0]?.id);
-    updateProgress();
-    window.addEventListener('scroll', updateProgress, { passive: true });
-    window.addEventListener('resize', updateProgress, { passive: true });
-
-    /* ---------- Motion: reveal + cursor light ---------- */
-    document.documentElement.classList.add('js-enhanced');
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const revealTargets = [...document.querySelectorAll('main > section .section-inner > h2, main > section .section-inner > .lead, .contract-grid, .ladder-list, .lab-shell, .control-stage, .evidence-grid, .takeaway-list, .ledger-wrap')];
-    revealTargets.forEach((el) => el.classList.add('reveal'));
-    let cursorLight;
-    function enableCursorLight() {
-      if (!finePointer.matches || reduceMotion.matches || cursorLight) return;
-      cursorLight = document.createElement('div');
-      cursorLight.className = 'cursor-light';
-      cursorLight.setAttribute('aria-hidden', 'true');
-      document.body.append(cursorLight);
-      window.addEventListener('pointermove', (e) => { if (cursorLight) cursorLight.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate3d(-50%, -50%, 0)`; }, { passive: true });
-    }
-    function revealAll() { revealTargets.forEach((el) => el.classList.add('in')); }
-    function configureMotion() {
-      if (reduceMotion.matches) { revealAll(); return; }
-      enableCursorLight();
-      if (typeof window.gsap === 'object' && typeof window.ScrollTrigger === 'function') {
-        window.gsap.registerPlugin(window.ScrollTrigger);
-        revealTargets.forEach((el) => window.gsap.fromTo(el, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: .7, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%', once: true } }));
-      } else if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries, obs) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add('in'); obs.unobserve(entry.target); } }), { rootMargin: '0px 0px -8%', threshold: .08 });
-        revealTargets.forEach((el) => observer.observe(el));
-      } else revealAll();
-    }
-    configureMotion();
-    reduceMotion.addEventListener?.('change', configureMotion);
-  </script>
+<div class="reading-progress" id="progress" aria-hidden="true"></div>
+<header class="nav"><div class="wrap nav-inner"><a class="brand" href="#top">VOIDINFINITY <span>×</span> GROUNDOPS / L03</a><nav class="navlinks" aria-label="Lesson navigation"><a href="#start">Start here</a><a href="#loop">Diagnostic loop</a><a href="#incident">Evidence</a><a href="#ladder">State ladder</a><a href="#safe-action">Safe action</a><a href="#at-scale">At scale</a><a href="#practice">Practice</a><a href="#glossary">Glossary</a></nav></div></header>
+<header class="hero" id="top"><div class="wrap"><p class="eyebrow">GroundOps · Lesson 03 · Evidence-first operations</p><h1>“Something is broken” is not yet a <em>root cause.</em></h1><p class="lead">An investigation becomes unreliable when a guess silently turns into a fact. Keep uncertainty visible while deciding what to observe and what to change.</p>
+<div class="wrap learning-note" id="opening-prediction"><p class="eyebrow">Pause &amp; predict</p><p>The page loads; a teammate says “restart the API,” while another says curl to port 8000 returns the expected body. Predict an observation that distinguishes a stopped API from a browser using another address. Write what each explanation predicts before opening the comparison.</p><details><summary>Compare your reasoning</summary><p>Observe the browser's actual URL and result, then compare a direct request from the same machine to the intended API. A response at 8000 can coexist with a browser targeting 8001. Restarting before observing may erase evidence without changing that wrong target. If both callers target 8000, investigate another boundary rather than forcing the port explanation.</p></details><p><strong>50 teaching minutes · draft.</strong> Core: prediction, labels, ladder, worked case, safe action and transfer. Fleet-scale details are extension/reference reading. Novice timing remains unmeasured.</p><p><strong>Interaction scope:</strong> cards show authored reasoning, not a live system. They send no API requests. Worksheet completion is not verification; text is neither graded nor saved nor sent, and disappears on reload. Clear note and quiz reset support another attempt.</p><noscript><p>JavaScript is disabled. The <a href="../../week-01-groundops/lessons/GRO-L03-evidence-first-operations.md">source lesson</a> contains the complete core loop, ladder, worked case, note template and assessment. Native disclosures remain readable; scripted choices and counts do not run. Save your actual evidence separately.</p></noscript></div>
+<div class="note"><strong>The central question.</strong><p>How do we move from a symptom to a justified repair without guessing, avoidable disruption or premature success? You need only GRO-L01's vocabulary and GRO-L02's request path.</p></div><div class="promise"><article><strong>01 · Name the claim</strong><p>Separate observation, inference, hypothesis, test, cause, fix, verification, and prevention.</p></article><article><strong>02 · Weigh the evidence</strong><p>Climb the system-state ladder and know which rung each check supports.</p></article><article><strong>03 · Act proportionately</strong><p>Choose the smallest safe next action, preserve useful evidence, and record what you did not test.</p></article></div></div></header>
+<main>
+<div class="wrap learning-note"><h2>Mapped model and its limits</h2><p>A parcel marked “delivered” but missing from the recipient maps to a claimed success with an unmet outcome. A time-stamped scan maps to an observation; “next building?” to a hypothesis; comparing label and destination to a discriminating test; redirecting and confirming receipt to correction and user verification. Network requests can be copied, retried and cached, and logs can be incomplete. This analogy labels claims, not packet behavior.</p></div>
+<section class="section" id="start"><div class="wrap"><p class="eyebrow">Part 1 · Begin with the real-world promise</p><h2>What does a “justified repair” actually require?</h2><p class="section-intro">Picture the course starter app. The React page loads in your browser. The card that should show the API status says it could not fetch the status. Within thirty seconds someone in the chat says, “The backend is down, just restart it.” That sentence sounds like a diagnosis. It is actually a guess about the cause, wrapped around a proposed intervention, with no observation attached. This lesson is about everything that should sit between the symptom and that restart.</p><div class="grid two"><article class="card"><div class="kicker">The promise</div><h3>What “fixed” should mean</h3><p>When we say an incident is fixed, we are promising four things at once: we know what caused the failure in the scope we investigated; we changed the smallest thing that removes or mitigates that cause; we checked that the user-visible behavior is back and nothing obvious broke; and we did something that makes a repeat less likely or less harmful.</p><p>If any of the four is missing, the honest word is not “fixed.” It might be “mitigated,” “restored, cause unknown,” or “changed, not yet verified.”</p></article><article class="card"><div class="kicker">The engineering question</div><h3>Which claims are we actually entitled to make?</h3><p>Every sentence in an investigation is a claim. “The API is down” is a claim. “The request went to port 8001” is a claim. Some are observed directly, some are inferred, some are just guesses. The engineering skill is not to stop making claims—it is to label each one honestly, so nobody builds a repair on top of a guess they mistook for a fact.</p><p>The same discipline scales from a local lab to a production incident. Not every failure needs a formal postmortem, but every failure deserves claims that match their evidence.</p></article></div><div class="note"><strong>First principle:</strong> An investigation is a chain of claims. Each claim is only as strong as the evidence beneath it. A guess that silently becomes a “fact” weakens every claim built on top of it—including the final “fixed.”</div><h3>Eight verbs people quietly collapse into one</h3><p class="section-intro">Under pressure, people say “I checked,” “it’s the network,” and “fixed it” as if they were the same kind of statement. They are not. Learn these labels; you will use them in every lab note and incident record from now on. The ninth card, mitigation, is the word people most often confuse with a fix.</p><div class="grid three"><article class="card"><div class="kicker">01</div><h4>Observation</h4><p>A directly recorded signal, with a time and a scope: who saw it, from where, with which tool.</p><p class="small">“At 10:14:07 the browser request to <code>http://127.0.0.1:8000/api/status</code> failed with a connection error.”</p></article><article class="card"><div class="kicker">02</div><h4>Inference</h4><p>A conclusion supported by one or more observations. It goes beyond what was recorded, so it can be wrong even when every observation is right.</p><p class="small">“The failure appears to be before a valid HTTP response was received.”</p></article><article class="card"><div class="kicker">03</div><h4>Hypothesis</h4><p>A testable explanation. It must predict something you could check and might find false.</p><p class="small">“The API is not listening on port 8000.”</p></article><article class="card"><div class="kicker">04</div><h4>Test</h4><p>An action chosen because its result would differ depending on which hypothesis is true.</p><p class="small"><code>curl -i http://127.0.0.1:8000/api/status</code>, while watching the API process terminal.</p></article><article class="card"><div class="kicker">05</div><h4>Root cause</h4><p>The causal condition the evidence demonstrates was responsible—<strong>in the investigated scope</strong>. Finding one failed setting is not always the full organizational root cause.</p><p class="small">“For this run, the frontend requested the wrong port.”</p></article><article class="card"><div class="kicker">06</div><h4>Fix</h4><p>The change that removes or mitigates the demonstrated cause—scoped to what the evidence showed, not to a broader guess.</p><p class="small">“Set the development API base URL back to port 8000.”</p></article><article class="card"><div class="kicker">07</div><h4>Verification</h4><p>Evidence that the expected behavior is restored and no known regression was introduced. Re-run the check that originally failed, plus a check for what the fix could break.</p><p class="small">“The browser now requests port 8000 and the card renders the body.”</p></article><article class="card"><div class="kicker">08</div><h4>Prevention</h4><p>A change to tests, configuration validation, automation, documentation, monitoring, or ownership that reduces recurrence or impact. Never just “be more careful.”</p><p class="small">“Add a browser test asserting the frontend calls the expected API path.”</p></article><article class="card"><div class="kicker">Plus · Mitigation</div><h4>Mitigation</h4><p>An action that reduces user harm now without necessarily touching the cause. Restarting, rolling back, or disabling a feature are mitigations until evidence shows they addressed the cause.</p><p class="small">“Restarted the API; status card works again; cause still unknown.”</p></article></div><div class="grid two" style="margin-top:22px"><article class="card"><h3>Why the verbs collapse</h3><p>Humans are story-building machines. Once a plausible story appears (“the backend is down”), every new detail gets read as support for it, and the moment it was a guess is forgotten. Time pressure makes this worse: a confident sentence feels like progress. Labels interrupt the slide. Writing “hypothesis:” in front of a sentence reminds everyone that it still needs a test.</p></article><article class="card"><h3>What the labels buy you</h3><p>Labels make an investigation <strong>auditable</strong>: another engineer can read your note and see which claims rest on recorded signals and which rest on reasoning. They make it <strong>resumable</strong>: if you hand off at 3 a.m., the next person knows what has been ruled out. And they make the final claim <strong>bounded</strong>: you say exactly what you proved, no more.</p></article></div></div></section>
+<section class="section alt" id="loop"><div class="wrap"><p class="eyebrow">Part 2 · Derive the mechanism</p><h2>A diagnostic loop: one falsifiable hypothesis at a time.</h2><p class="section-intro">If guesses are the problem, we need a procedure that makes each guess earn its place. The loop below is used in every FailureCore lab in this course. Each step exists because skipping it produces a specific, recognisable mistake. Click each step to see what it does and how it fails.</p>
+<div class="flow" role="group" aria-label="Interactive ten-step diagnostic loop"><button class="flowstep" data-flow="0" aria-pressed="true"><strong>1. Symptom</strong><span>Record exactly what fails.</span></button><button class="flowstep" data-flow="1" aria-pressed="false"><strong>2. Locate boundary</strong><span>Last working, first failing hand-off.</span></button><button class="flowstep" data-flow="2" aria-pressed="false"><strong>3. Observe</strong><span>Without deliberately changing state.</span></button><button class="flowstep" data-flow="3" aria-pressed="false"><strong>4. Hypothesis</strong><span>Falsifiable, specific.</span></button><button class="flowstep" data-flow="4" aria-pressed="false"><strong>5. Choose test</strong><span>Results differ per hypothesis.</span></button><button class="flowstep" data-flow="5" aria-pressed="false"><strong>6. Compare</strong><span>Result versus prediction.</span></button><button class="flowstep" data-flow="6" aria-pressed="false"><strong>7. Bounded cause</strong><span>Only as wide as the evidence.</span></button><button class="flowstep" data-flow="7" aria-pressed="false"><strong>8. Smallest fix</strong><span>One change, the right one.</span></button><button class="flowstep" data-flow="8" aria-pressed="false"><strong>9. Verify</strong><span>Same check, same vantage point.</span></button><button class="flowstep" data-flow="9" aria-pressed="false"><strong>10. Record</strong><span>Note and prevention.</span></button></div>
+<div class="detailpanel" id="flow-detail" aria-live="polite"><span class="label">Loop step 1 · Symptom</span><h3>State the symptom exactly</h3><p>Write down the user-visible behavior, time, environment and version if known. “The status card shows a fetch failure at 10:14 on the local stack” can be compared with evidence. “The API is down” already assumes a cause.</p><div class="example"><strong>Example:</strong> preserve the actual error, not a paraphrase that turns a symptom into a diagnosis.</div></div>
+<div class="grid two" style="margin-top:26px"><article class="card"><h3>Why “falsifiable” is the key word</h3><p>A useful hypothesis predicts an observation that might contradict it. “The browser targets 8001 rather than the intended listener at 8000” predicts the Network URL. A current file saying 8000 does not alone refute it: the page might contain a stale value or an inherited override. A missing log is supporting evidence only within known logging coverage. Test the effective request rather than treating every indirect clue as decisive.</p></article>
+<article class="card"><h3>Why one controlled comparison at a time</h3><p>If two settings change and the symptom disappears, either, both or an unrelated change may explain recovery. That is confounding. A team may retain a timeout increase, restart and cache flush as a ritual because nobody knows which mattered. Holding other conditions fixed costs some speed but makes the causal explanation stronger; it still cannot rule out every contributing condition.</p></article>
+<article class="card"><h3>Why observe before you intervene</h3><p>A restart can discard memory, open connections and loaded settings. A rebuild can replace the bundle being investigated. Existing logs or files may survive, but do not assume they will. Prefer relevant low-risk observations before mutation when safe. Even a diagnostic HTTP request adds load and logs; read-only describes intended application effects, not literally zero side effects.</p></article>
+<article class="card"><h3>Why it is a loop, not a line</h3><p>A result that contradicts a prediction is useful. Check whether the observation and the hypothesis refer to the same caller, version and time; then revise or reject the explanation. Record contradictions rather than explaining them away. A passing test supports a bounded explanation, not certainty about all networking.</p></article></div>
+<div class="note"><strong>Keep this mental picture:</strong> every hypothesis is a prediction machine. Before testing, write what each candidate predicts. If all predict the same result, find a different observation or state why the next check only narrows part of the uncertainty.</div></div></section>
+<section class="section" id="incident"><div class="wrap"><p class="eyebrow">Part 3 · The incident</p><h2>The page loads. The status card fails. Six pieces of evidence arrive.</h2><p class="section-intro">This illustrative case assumes the page at <code>http://127.0.0.1:5173</code>, an API listener at 8000, no listener at 8001 and no simultaneous changes. Six statements arrive: observations, configuration and a teammate's claim. None is a captured course run.</p>
+<div class="grid three"><article class="card"><h4>Network panel</h4><p>The browser's request record: URL, method, result and timing. Open it before the click and check filters/recording before interpreting silence.</p></article><article class="card"><h4><code>curl -i</code></h4><p>A terminal HTTP client; <code>-i</code> includes response headers. It tests from the shell's location without enforcing browser CORS.</p></article><article class="card"><h4>Listener</h4><p>A network endpoint accepting connections for a process. A running process is not automatically listening on the expected interface and port.</p></article><article class="card"><h4>Access log</h4><p>A server's request record under its logging configuration. Check source, time, filtering, delay and retention before relying on an absent line.</p></article><article class="card"><h4>Base URL</h4><p>The address prepended to an API path. Here <code>VITE_API_BASE_URL</code> can override the default <code>http://127.0.0.1:8000</code>.</p></article><article class="card"><h4>Connection error</h4><p>No HTTP response was received by this caller. That differs from 404 or 500, which indicate an HTTP response; the exact error still matters.</p></article></div>
+<h3 style="margin-top:42px">Inspect each statement: what does it prove, and what does it not?</h3><p class="small">Before revealing each card, name its instrument, caller and strongest justified claim. Then compare the limit.</p>
+<div class="evidence-grid" id="evidence-board">
+<button class="evidence" aria-pressed="false"><span class="tag">Evidence 01 · Observation · Browser</span><strong>Network: GET <code>http://<wbr>127.0.0.1:8001<wbr>/api/status</code> failed with connection refused.</strong><p>The browser targeted 8001 and received no HTTP response.</p><span class="reveal">This names the actual destination, not the intended API's availability at 8000. Compare with the intended listener before saying “API down.”</span></button>
+<button class="evidence" aria-pressed="false"><span class="tag">Evidence 02 · Observation · Terminal</span><strong><code>curl -i <wbr>http://127.0.0.1:8000<wbr>/api/status</code> returns 200 and the expected body.</strong><p>This caller reached a listener and route at 8000.</p><span class="reveal">This supports listener/route evidence from the terminal, not browser targeting, CORS enforcement or rendering.</span></button>
+<button class="evidence" aria-pressed="false"><span class="tag">Evidence 03 · Observation · Process</span><strong>The API process is running.</strong><p>A program instance has not exited.</p><span class="reveal">Alone it does not prove the interface, port, route or user outcome. Combined with the direct response, it supports this local API answering at 8000 at that time.</span></button>
+<button class="evidence" aria-pressed="false"><span class="tag">Evidence 04 · Observation · Backend log</span><strong>The log shows curl but no matching browser-click line.</strong><p>The curl request reached this process; browser arrival is not established by this log.</p><span class="reveal">One logged request confirms some logging works, not complete coverage. With the wrong browser URL this absence supports the explanation, but filtering, buffering, timing or another log destination remain possible limits.</span></button>
+<button class="evidence" aria-pressed="false"><span class="tag">Evidence 05 · Configuration</span><strong>The env file sets <code>VITE_API_BASE_URL=<wbr>http://127.0.0.1:8001</code>.</strong><p>The intended setting names the wrong port.</p><span class="reveal">The file alone does not establish the running page's value. Vite reads env files at startup; inherited environment has higher priority. Compare with Network and the displayed effective URL.</span></button>
+<button class="evidence" aria-pressed="false"><span class="tag">Evidence 06 · Claim · Teammate</span><strong>“I restarted the API and it’s fine now.”</strong><p>An intervention and a check are reported, without evidence yet.</p><span class="reveal">Ask which check, caller and time. Curl at 8000 already worked. Restarting that API does not change this frontend's configured target; require a repeated browser action before accepting recovery.</span></button>
+</div><p class="status" id="evidence-status" role="status"><strong>0 of 6 opened.</strong> Combine different vantage points; a reveal count is not verification.</p>
+<div class="callout-warn"><strong>Follow the disagreement:</strong> the actual browser target is 8001 while the intended route responds at 8000. That is a more specific lead than “networking is broken.” It does not establish why the setting became wrong or prove other environments healthy.</div></div></section>
+<section class="section alt" id="ladder"><div class="wrap"><p class="eyebrow">Part 4 · The system-state ladder</p><h2>Evidence at one rung does not prove the rung above it.</h2><p class="section-intro">Part 3’s evidence came from different instruments, and each instrument can only see so high. This ladder makes that explicit. It moves from low-level facts (“the file exists”) to the only claim users care about (“the feature works for me, under my conditions”). Click each rung to see what it claims, what evidence supports it, and the false conclusion it tempts people into.</p><div class="fourstage" role="group" aria-label="Select a rung of the system-state ladder"><button data-stage="artifact" aria-pressed="true"><span class="number">RUNG 1</span><strong>Artifact present</strong><span>Does the code or config exist?</span></button><button data-stage="process" aria-pressed="false"><span class="number">RUNG 2</span><strong>Process started</strong><span>Is a runtime process alive?</span></button><button data-stage="listener" aria-pressed="false"><span class="number">RUNG 3</span><strong>Listener reachable</strong><span>Can this caller connect?</span></button><button data-stage="route" aria-pressed="false"><span class="number">RUNG 4</span><strong>Route responds</strong><span>Does the method and path answer?</span></button><button data-stage="contract" aria-pressed="false"><span class="number">RUNG 5</span><strong>Contract holds</strong><span>Is the answer the promised one?</span></button><button data-stage="e2e" aria-pressed="false"><span class="number">RUNG 6</span><strong>End-to-end path</strong><span>Does the real client succeed?</span></button><button data-stage="outcome" aria-pressed="false"><span class="number">RUNG 7</span><strong>User outcome</strong><span>Under the conditions that matter?</span></button></div><div class="detailpanel" id="stage-detail" aria-live="polite"><span class="label">Rung 1 · Artifact present</span><h3>The required code or configuration exists</h3><p>There is a thing you can point at: a file diff, a commit, a built bundle, an image in a registry. Evidence: the diff, the commit ID, registry metadata. This is the cheapest rung to check and the one most often mistaken for the top of the ladder.</p><div class="example"><strong>Example:</strong> “The env file says port 8000, so the browser uses 8000.” The file can be correct while the running dev server still serves values it read before the edit.</div></div><div class="grid two" style="margin-top:22px"><article class="card"><h3>Place Part 3’s evidence on the ladder</h3><p>The env file (Evidence 05) is rung 1. The uvicorn terminal (Evidence 03) is rung 2. The curl call (Evidence 02) reaches rungs 3 and 4—but only from the terminal’s vantage point. The browser’s failed request (Evidence 01) is a <em>failed</em> rung 3 from the browser’s vantage point. Put that way, the contradiction is obvious: rung 3 succeeds from one place and fails from another. The two calls are not reaching the same address.</p></article><article class="card"><h3>Why each rung is a separate claim</h3><p>Each rung adds a new way to fail that the rung below cannot see. A file cannot tell you whether a process loaded it. A process cannot tell you which port it bound. A listener cannot tell you which route answers. A route cannot tell you whether a browser may read it. Moving up a rung always needs a new observation; it never follows by logic alone.</p></article><article class="card"><h3>Vantage point is part of the rung</h3><p>Rungs 3 to 6 are always “from where?” The same URL can be reachable from your terminal and unreachable from a browser, a container, or another region, because each caller has its own network namespace, DNS view, proxy settings, and security rules. A rung claim without a vantage point is incomplete.</p></article><article class="card"><h3>Time is part of the rung too</h3><p>Every observation was true at a moment. A curl call at 10:14 says nothing about 10:20 if a deployment, restart, or config reload happened in between. Good notes record when each rung was observed, so nobody stitches together a “healthy system” from checks taken at different times against different versions.</p></article></div><div class="table-wrap" style="margin-top:22px"><table><thead><tr><th>Rung</th><th>Claim</th><th>Typical evidence</th><th>False conclusion to avoid</th></tr></thead><tbody><tr><td>1 · Artifact present</td><td>Required code/config exists</td><td>File diff, commit, registry metadata</td><td>“The file exists, so it works.”</td></tr><tr><td>2 · Process started</td><td>Runtime process is alive</td><td>Process output, process table, container status</td><td>“The process runs, so the route is reachable.”</td></tr><tr><td>3 · Listener reachable</td><td>Caller can connect to host/port</td><td>TCP connection, direct HTTP check</td><td>“The port is open, so correct behavior is served.”</td></tr><tr><td>4 · Route responds</td><td>Method/path returns a response</td><td><code>curl -i</code>, API test, response body</td><td>“200 means every response is semantically correct.”</td></tr><tr><td>5 · Contract holds</td><td>Responses match documented expectations</td><td>Tests for status, schema, validation, error cases</td><td>“The contract holds, so the browser can read it.”</td></tr><tr><td>6 · End-to-end path works</td><td>The real client completes the path</td><td>Browser Network record + rendered UI state</td><td>“It worked once, so capacity and reliability are fine.”</td></tr><tr><td>7 · User outcome holds</td><td>Correct outcome under required conditions</td><td>Acceptance tests, product-level evidence</td><td>“One happy-path test proves production readiness.”</td></tr></tbody></table></div><div class="note"><strong>This ladder is a teaching model, not an industry standard.</strong> It exists to stop evidence from being stretched. A real production-readiness claim may need extra rungs for authentication and authorization, persistence, performance, resilience, accessibility, data protection, deployment safety, and business invariants. The rule stays the same: name the rung your evidence reaches, and do not claim the one above it.</div></div></section>
+<section class="section" id="safe-action"><div class="wrap"><p class="eyebrow">Part 5 · Choose the smallest safe next action</p><h2>Maximize information. Minimize risk. In that order of thought.</h2><p class="section-intro">The loop says what to do next in the abstract. This part is about the concrete action you are about to type. A useful diagnostic action tells you as much as possible about which hypothesis is true, while changing as little as possible about the system and the people relying on it. Before running anything, answer six questions. Each question exists because skipping it has burned real teams.</p><div class="controls"><article class="control-card"><div class="control-head"><span class="num">01</span><div><h3>Plausible hypotheses</h3><p>What explanations are still on the table?</p></div></div><div class="control-body"><p><strong>Why it exists:</strong> an action chosen without a list of hypotheses is a ritual, not a test. Writing the list also shows when you have only one idea, which is the moment you are most likely to be wrong.</p><ul><li>Wrong API port in the frontend configuration.</li><li>API process not listening, or listening on another interface.</li><li>Browser blocked from reading the response (CORS).</li><li>Stale bundle: the browser is running code built before a config change.</li></ul><div class="split"><div class="mini"><strong>Strong</strong><p>Three or four specific candidates, each tied to a boundary from GRO-L02.</p></div><div class="mini"><strong>Weak</strong><p>“Something with the network or maybe the backend.”</p></div></div></div></article><article class="control-card"><div class="control-head"><span class="num">02</span><div><h3>Expected results</h3><p>If each hypothesis were true, what would I see?</p></div></div><div class="control-body"><p><strong>Why it exists:</strong> without a written prediction, any result can be read as confirmation afterward. Predictions turn an action into an experiment.</p><ul><li>Wrong port → Network panel shows <code>:8001</code>; API log stays silent.</li><li>Not listening → curl to <code>:8000</code> gets “connection refused.”</li><li>CORS → request reaches the API log; Console shows a CORS error.</li></ul><div class="split"><div class="mini"><strong>Strong</strong><p>One distinct prediction per hypothesis, written before the action.</p></div><div class="mini"><strong>Weak</strong><p>“Let’s see what happens.”</p></div></div></div></article><article class="control-card"><div class="control-head"><span class="num">03</span><div><h3>Discriminating observation</h3><p>Which action separates the hypotheses?</p></div></div><div class="control-body"><p><strong>Why it exists:</strong> some checks feel productive but cannot change your mind. Pick the one whose result differs across the candidates.</p><p>Opening the Network panel and reading the request URL separates “wrong port” from “not listening” and from “CORS” in one look. Running curl again from the terminal cannot: it never sees the browser’s URL.</p><div class="split"><div class="mini"><strong>Strong</strong><p>An observation from the vantage point that is actually failing.</p></div><div class="mini"><strong>Weak</strong><p>Re-running the check that already passes, because it is reassuring.</p></div></div></div></article><article class="control-card"><div class="control-head"><span class="num">04</span><div><h3>State change</h3><p>Does this action change the system?</p></div></div><div class="control-body"><p><strong>Why it exists:</strong> state-changing actions destroy evidence and can create new failures. A restart clears in-memory state and a crashed process’s exit status; a rebuild replaces the bundle you were trying to inspect; a cache flush erases the stale entry that explained the symptom.</p><p>Prefer read-only actions until the cause is narrow enough to justify a change.</p><div class="split"><div class="mini"><strong>Read-only</strong><p>Network panel, logs, <code>curl</code>, process status, config diff, running version or image digest.</p></div><div class="mini"><strong>State-changing</strong><p>Restart, rebuild, redeploy, cache flush, delete, permission change, data migration.</p></div></div></div></article><article class="control-card"><div class="control-head"><span class="num">05</span><div><h3>Exposure and blast radius</h3><p>Could it expose data, destroy work, cost money, or affect others?</p></div></div><div class="control-body"><p><strong>Why it exists:</strong> diagnostic commands are not automatically safe. Printing an environment dumps secrets into a terminal recording. Widening CORS to <code>*</code> “to test” can expose an API to every website. Restarting a shared service drops other people’s connections. Scaling up to “rule out load” has a bill.</p><div class="split"><div class="mini"><strong>Ask</strong><p>Who else is on this system? What would leak into logs, screenshots, or chat?</p></div><div class="mini"><strong>Prefer</strong><p>The narrowest scope: one request, one test user, one instance, a redacted output.</p></div></div></div></article><article class="control-card"><div class="control-head"><span class="num">06</span><div><h3>Rollback or cleanup</h3><p>Is there a safe way back?</p></div></div><div class="control-body"><p><strong>Why it exists:</strong> if you cannot undo an action, you must be much more certain before taking it. Some effects survive any rollback: a deleted volume, a sent email, a published package, a rotated credential that other services still use.</p><div class="split"><div class="mini"><strong>Before acting</strong><p>Write the exact undo step and check it is possible.</p></div><div class="mini"><strong>If there is none</strong><p>Escalate, get a second pair of eyes, or find a reversible alternative.</p></div></div></div></article></div><h3 style="margin-top:42px">Same goal, different costs</h3><p class="section-intro">Every row below could be someone’s “first move” on the failing status card. Read across: the best first actions are cheap, read-only, and discriminating.</p><div class="table-wrap"><table><thead><tr><th>Candidate action</th><th>Information gained</th><th>Changes state?</th><th>Reversible?</th><th>Verdict as a first move</th></tr></thead><tbody><tr><td>Read the request URL in the Network panel</td><td>High: separates wrong target, refused connection, and CORS</td><td>No</td><td>Not needed</td><td>Best first move</td></tr><tr><td><code>curl -i</code> the known API URL</td><td>Medium: proves rungs 3–4 from the terminal only</td><td>No</td><td>Not needed</td><td>Good second move</td></tr><tr><td>Read the API access log for the click time</td><td>Medium–high, if logging is shown to work</td><td>No</td><td>Not needed</td><td>Good, after calibration</td></tr><tr><td>Restart the API</td><td>Low: hides the cause if it “works”</td><td>Yes</td><td>Mostly, but evidence is lost</td><td>Mitigation, not diagnosis</td></tr><tr><td>Set CORS to allow all origins</td><td>Low, and it adds a security risk</td><td>Yes</td><td>Yes, if remembered</td><td>Avoid</td></tr><tr><td>Delete <code>node_modules</code> and reinstall</td><td>Very low for this symptom</td><td>Yes</td><td>Slowly</td><td>Ritual, not a test</td></tr></tbody></table></div><div class="callout-warn"><strong>Mitigation is allowed—just call it what it is.</strong> If users are harmed right now, restarting or rolling back can be the correct first move. But a restart that restores service does not establish the cause. The process might have exited on invalid configuration, crashed on a request, been killed for using too much memory, or never imported a dependency. Write “mitigated by restart; cause under investigation,” capture what evidence you can before and after, and keep investigating.</div></div></section>
+<section class="section alt" id="worked"><div class="wrap"><p class="eyebrow">Part 6 · Worked example from first principles</p><h2>From “the card fails” to a bounded cause, one recorded step at a time.</h2><p class="section-intro">Here is the whole loop applied to Part 3’s incident. Notice how each step names its evidence and its limits. The aim is not speed; it is a final claim that nobody can knock over, because every piece of it was observed or tested.</p><div class="code pre">10:14:07  browser  GET http://127.0.0.1:8001/api/status  →  (failed) net::ERR_CONNECTION_REFUSED
+10:15:30  terminal $ curl -i http://127.0.0.1:8000/api/status
+          HTTP/1.1 200 OK
+          content-type: application/json
+          {"service":"groundops-api","status":"available","version":"0.1.0", ...}
+10:15:30  uvicorn  INFO:  127.0.0.1:53122 - "GET /api/status HTTP/1.1" 200 OK
+          (no uvicorn line at 10:14:07)</div><p class="small" style="margin-top:12px">The exact browser error text and the API body vary by browser and starter-app version. The shape is what matters: one failed request with no HTTP response, one successful request from a different vantage point, and a server log that saw only the second.</p><div class="steps"><div class="step"><div><strong>Symptom</strong><p>The React page loads at <code>http://127.0.0.1:5173</code>; the API status card shows a fetch error. Recorded at 10:14, local dev stack, current working tree.</p></div></div><div class="step"><div><strong>Observation 1 — browser vantage point</strong><p>The Network panel shows <code>GET http://127.0.0.1:8001/api/status</code> failing with a connection error: no status code, no headers.</p></div></div><div class="step"><div><strong>Observation 2 — terminal vantage point</strong><p><code>curl -i http://127.0.0.1:8000/api/status</code> returns <code>200 OK</code> and the expected JSON body. The API is answering on 8000 from this machine.</p></div></div><div class="step"><div><strong>Hypothesis</strong><p>The frontend is configured with the wrong API port. Prediction: configuration says 8001; the API log has no line for the click.</p></div></div><div class="step"><div><strong>Discriminating test</strong><p>Inspect the configured API base URL and compare it with the Network panel URL and the known listener. In the starter app the value comes from <code>VITE_API_BASE_URL</code>, with a fallback of <code>http://127.0.0.1:8000</code>.</p></div></div><div class="step"><div><strong>Result</strong><p>The frontend env file sets port 8001. The API log shows the curl line but nothing at 10:14:07. Both predictions hold, and logging is shown to work, so the missing line is meaningful.</p></div></div><div class="step"><div><strong>Root cause, bounded</strong><p>For this run, the frontend requested the wrong port, so the intended API route was never targeted. Not “networking is broken.” Not “the API is flaky.”</p></div></div><div class="step"><div><strong>Fix</strong><p>Correct the development base URL to port 8000, then restart the Vite dev server, because Vite reads env files at start-up and replaces <code>import.meta.env</code> values in the code it serves.</p></div></div><div class="step"><div><strong>Verification</strong><p>Reload the page. Confirm the Network panel now shows <code>:8000</code>, the response status, and an <code>Access-Control-Allow-Origin</code> header matching the page origin, and that the card renders the body. Note the time and the commit you verified.</p></div></div><div class="step"><div><strong>Prevention</strong><p>Add a check that fails loudly when the frontend targets an unexpected API URL—a start-up log of the effective base URL, or a browser integration test that asserts the request path. Keep the URL in documented environment configuration, and never place a secret in a <code>VITE_</code> variable: those values ship in the public bundle.</p></div></div></div><div class="callout-warn"><strong>What the evidence does not justify:</strong> “all networking is healthy,” “the API was never the problem anywhere,” or “this will not happen in staging.” It justifies a narrow, bounded conclusion about one failure on one stack and its repair. Narrow claims are not weak claims; they are the only kind that survive scrutiny.</div><h3 style="margin-top:42px">Write the incident note as you go</h3><p class="section-intro">The note is not paperwork after the fact. Filling it in during the investigation forces each claim into the right field. Type into the fields below as you work a practice incident. Nothing is graded, saved, or sent anywhere.</p><article class="card worksheet"><div class="kicker">Incident note</div><h3>“Tests not executed” is on this list on purpose</h3><p>It stops absence of evidence from silently becoming evidence of success. If you did not check the browser after the fix, write that down; the next reader needs to know.</p><div class="worksheet-grid" id="worksheet-grid"><div class="worksheet-field"><label for="n1">Incident / lab ID</label><input id="n1" type="text" autocomplete="off" placeholder="e.g. LAB-GRO-03 run 2"></div><div class="worksheet-field"><label for="n2">Time window</label><input id="n2" type="text" autocomplete="off" placeholder="10:14–10:31 local"></div><div class="worksheet-field"><label for="n3">User-visible symptom</label><input id="n3" type="text" autocomplete="off" placeholder="Status card shows fetch error"></div><div class="worksheet-field"><label for="n4">Expected behavior</label><input id="n4" type="text" autocomplete="off" placeholder="Card shows API status body"></div><div class="worksheet-field"><label for="n5">Actual behavior</label><input id="n5" type="text" autocomplete="off" placeholder="Connection error, no HTTP response"></div><div class="worksheet-field"><label for="n6">Impact and scope</label><input id="n6" type="text" autocomplete="off" placeholder="Local dev only; one developer"></div><div class="worksheet-field"><label for="n7">Relevant revision / artifact version</label><input id="n7" type="text" autocomplete="off" placeholder="Commit or working tree state"></div><div class="worksheet-field"><label for="n8">Direct observations (source + timestamp)</label><input id="n8" type="text" autocomplete="off" placeholder="Network panel 10:14:07: GET :8001 refused"></div><div class="worksheet-field"><label for="n9">Hypotheses considered</label><input id="n9" type="text" autocomplete="off" placeholder="Wrong port; not listening; CORS"></div><div class="worksheet-field"><label for="n10">Tests performed and results</label><input id="n10" type="text" autocomplete="off" placeholder="curl :8000 → 200; env file → 8001"></div><div class="worksheet-field"><label for="n11">Root cause (bounded to evidence)</label><input id="n11" type="text" autocomplete="off" placeholder="This run: frontend targeted port 8001"></div><div class="worksheet-field"><label for="n12">Mitigation / correction</label><input id="n12" type="text" autocomplete="off" placeholder="Base URL → 8000; restarted Vite"></div><div class="worksheet-field"><label for="n13">Verification evidence</label><input id="n13" type="text" autocomplete="off" placeholder="Network shows :8000 200; card renders"></div><div class="worksheet-field"><label for="n14">Known remaining uncertainty</label><input id="n14" type="text" autocomplete="off" placeholder="Why the env file had 8001"></div><div class="worksheet-field"><label for="n15">Prevention action (owner + done-when)</label><input id="n15" type="text" autocomplete="off" placeholder="Browser test on API path; owner; merged"></div><div class="worksheet-field"><label for="n16">Cleanup completed</label><input id="n16" type="text" autocomplete="off" placeholder="Temporary debug logging removed"></div><div class="worksheet-field"><label for="n17">Tests not executed</label><input id="n17" type="text" autocomplete="off" placeholder="Did not test other browsers"></div></div><div class="worksheet-actions"><button class="btn" id="worksheet-clear" type="button">Clear note</button></div><p class="status" id="worksheet-status" role="status"><strong>0 of 17 fields filled.</strong> Write only what you observed or tested; mark every inference as an inference.</p></article></div></section>
+<section class="section" id="ai-review"><div class="wrap"><p class="eyebrow">Part 7 · Review AI-generated artifacts as executable decisions</p><h2>Valid YAML is one gate. It is not the only gate.</h2><p class="section-intro">An AI-generated Dockerfile, Kubernetes manifest, GitHub Actions workflow, or shell script is not documentation. It is a proposal that, once merged, <em>will run</em>—with whatever permissions, secrets, and network access it is given. Review it the way you would review a production change written by a capable stranger who has never seen your environment. Syntax validity, linting, and “it looks reasonable” answer none of the questions below.</p><div class="code pre"># Proposed by an assistant: "deploy preview on every PR"
+on: pull_request
+permissions: write-all
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "API_TOKEN=${{ secrets.API_TOKEN }}" &gt;&gt; .env
+      - run: ./scripts/deploy-preview.sh</div><p class="small" style="margin-top:12px">This parses, lints, and would probably “work.” Hold it against the matrix and it fails several dimensions at once: every job gets every write permission, a secret is copied into a file that later steps or artifacts might expose, and nobody has said what the deploy script touches or how to undo it.</p><div class="grid two"><article class="card"><div class="kicker">01 · Intent</div><h3>Does it solve the requested requirement?</h3><p>Generated code often solves a nearby problem. “Deploy a preview” is not the same as “deploy to the shared staging environment,” and a script that does the second while named the first will pass review if nobody reads it.</p></article><article class="card"><div class="kicker">02 · Context</div><h3>Does it match this repo and environment?</h3><p>Check repository layout, runtime and action versions, port mappings, base images, and deployment topology. Assistants fill gaps with common defaults; your environment is not the common case.</p></article><article class="card"><div class="kicker">03 · Permissions</div><h3>Does it ask only for the authority it needs?</h3><p>Workflow token permissions, cloud roles, and Kubernetes RBAC should be scoped to the job. GitHub’s secure-use guidance recommends granting the <code>GITHUB_TOKEN</code> the least access required. <code>write-all</code> fails this dimension on sight.</p></article><article class="card"><div class="kicker">04 · Secrets and data</div><h3>Could anything sensitive leak?</h3><p>Look for keys, tokens, personal data, or internal URLs that could land in source, logs, image layers, build caches, artifacts, or a browser bundle. Any <code>VITE_</code> variable used by client code ships to every visitor.</p></article><article class="card"><div class="kicker">05 · Failure behavior</div><h3>What happens when things go wrong?</h3><p>Timeout, unavailable dependency, invalid configuration, non-2xx response, restart mid-way, partial failure. Generated scripts usually cover the happy path. Ask what state is left behind when step 3 of 5 fails.</p></article><article class="card"><div class="kicker">06 · Observability</div><h3>Would you know if it worked or failed?</h3><p>Which signal shows success? Which exposes failure? Can the on-call operator actually see those signals, or do they live in a log nobody has access to?</p></article><article class="card"><div class="kicker">07 · Reversibility</div><h3>Can it be undone?</h3><p>Reverting a commit does not unsend an email, un-publish a package, restore a dropped table, or revoke a token that leaked. Name the side effects that survive rollback.</p></article><article class="card"><div class="kicker">08 · Verification</div><h3>What exact evidence will prove it worked?</h3><p>Before merging, write the check you will run afterward and which ladder rung it reaches. “The workflow went green” is rung 1–2 evidence about the workflow, not about the preview a reviewer will open.</p></article></div><div class="callout-warn"><strong>AI can help with every row of this matrix</strong>—it can list permissions, spot a secret in a log line, or draft failure handling. What it cannot do is own the decision. A team must decide what evidence is enough, approve risky permissions, and stay accountable for what runs. “The assistant generated it and CI passed” is not an answer to any of the eight questions.</div></div></section>
+<section class="section alt" id="diagnosis"><div class="wrap"><p class="eyebrow">Part 8 · From symptom to diagnosis</p><h2>“Resolved by restart” is a mitigation, not a root cause.</h2><p class="section-intro">Change the incident: this time the API really stopped, a restart restores the card, and the cause remains unknown. Predict what evidence could separate a startup failure from a process killed during operation before reading the alternatives.</p>
+<div class="grid two"><article class="card"><h3>Intervention</h3><p>Restart, rollback or a setting change deliberately changes state. Sometimes this must come first to limit harm. It can erase evidence and adds a new change to explain; record what happened before and after.</p></article><article class="card"><h3>Observation</h3><p>Read the stopped process's exit status, last log lines, prior memory readings, version and loaded configuration where available. Some survive a restart and some do not. Preserve inexpensive evidence when safe; do not assume every log is lost or complete.</p></article></div>
+<h3 style="margin-top:42px">Four different explanations to test</h3><div class="grid two">
+<article class="card"><div class="kicker">Invalid configuration</div><p>A required setting may be absent or invalid at startup. Restarting unchanged inputs need not help. Look for the startup error and whether the replacement process read different inputs.</p></article>
+<article class="card"><div class="kicker">Process-level failure</div><p>A fatal runtime or native-code failure can terminate a worker. An ordinary FastAPI request exception generally produces a 500 response, not worker death. Require process exit evidence as well as a traceback before claiming a crash. A request failure and a stopped listener are different boundaries.</p></article>
+<article class="card"><div class="kicker">Resource pressure</div><p>An out-of-memory kill may terminate a process; CPU starvation may instead leave it alive but slow. Restart can reduce memory temporarily without fixing a leak. Compare resource history and actual termination records.</p></article>
+<article class="card"><div class="kicker">Missing dependency</div><p>An import can fail or a required downstream service can be unavailable. A restart helps only if the relevant condition changed or transient state cleared. A port already occupied is a binding conflict, not evidence a dependency returned. Inspect the specific error.</p></article></div>
+<div class="steps">
+<div class="step"><div><strong>1. Protect users within the incident process</strong><p>Use an authorized mitigation when harm is ongoing. Say what it restores and what remains unknown.</p></div></div>
+<div class="step"><div><strong>2. Capture inexpensive, perishable evidence</strong><p>Preserve available error lines, exit status, version and time without exposing secrets or delaying urgent recovery.</p></div></div>
+<div class="step"><div><strong>3. Verify the mitigation</strong><p>Repeat the original user action, not only curl. Record the observed restored outcome and time.</p></div></div>
+<div class="step"><div><strong>4. Investigate with discriminating predictions</strong><p>Compare configuration, process-level failure, resource pressure and dependency hypotheses against captured observations. Several may contribute.</p></div></div>
+<div class="step"><div><strong>5. Correct the demonstrated condition and track prevention</strong><p>Choose an appropriate validator, error-handling change, resource control or dependency check. Give the work an owner and observable completion criterion; writing it down does not mean it ran.</p></div></div>
+</div><div class="callout-good"><strong>Evidence-first is not “never act.”</strong> User safety wins over an expensive investigation. Record “restored; cause unknown” when that is all the evidence supports, and keep the cause investigation separate. Local labs can pause before mutation; production incidents may not.</div></div></section>
+<section class="section" id="contract"><div class="wrap"><p class="eyebrow">Part 9 · The operating contract</p><h2>Eight questions before you write “resolved.”</h2><p class="section-intro">This is the checklist to run before closing any investigation, from a lab to a production incident. Each question exists because a specific, common mistake slips past without it. Open each one to see its purpose and the evidence that answers it.</p><div class="contract"><details><summary>01 · Is every claim labelled with its verb?</summary><p>Observations, inferences, hypotheses, and tested results should be distinguishable on the page. An unlabelled sentence is read as fact by the next person, whatever it actually was.</p><div class="evidence-pill">Evidence: the note separates “observed (source, time)” from “inferred” and “hypothesis.”</div></details><details><summary>02 · Which ladder rung does each check reach, and from where?</summary><p>A check proves its rung from its vantage point at its moment—nothing above, nowhere else, no later.</p><div class="evidence-pill">Evidence: each verification names its rung, its vantage point (browser, terminal, other service), and its time.</div></details><details><summary>03 · Did the discriminating test actually discriminate?</summary><p>If every hypothesis predicted the same result, the test confirmed nothing, however good it felt.</p><div class="evidence-pill">Evidence: written predictions per hypothesis, and the result that eliminated the others.</div></details><details><summary>04 · Is the root cause bounded to what was demonstrated?</summary><p>“Networking,” “human error,” and “the API was flaky” are not causes. A bounded cause names the condition, the scope, and the run.</p><div class="evidence-pill">Evidence: “For this run in this environment, condition X caused Y,” plus the evidence chain.</div></details><details><summary>05 · Was the fix the smallest change that addressed the cause?</summary><p>Several simultaneous changes make it impossible to know which one mattered and can bring in new risk.</p><div class="evidence-pill">Evidence: one change tied to the cause, or a written reason for each extra change.</div></details><details><summary>06 · Was the original failing check repeated from the original vantage point?</summary><p>Verifying with curl when the failure was in the browser verifies something else.</p><div class="evidence-pill">Evidence: the same user-visible check now passes, tied to the version and time verified.</div></details><details><summary>07 · Are mitigations labelled as mitigations?</summary><p>“Restarted, works now” must not be written into the cause field. Mitigation and investigation can both be correct; they are different entries.</p><div class="evidence-pill">Evidence: separate “mitigation” and “root cause” fields; cause marked “unknown” if not yet shown.</div></details><details><summary>08 · Is there a specific prevention, and are untested things listed?</summary><p>“Be more careful” is not an engineering control. And anything not tested must be written down, so absence of evidence is not read as success.</p><div class="evidence-pill">Evidence: a test, validator, alert, or runbook change with an owner and done-when, plus a “tests not executed” list.</div></details></div></div></section>
+<section class="section alt" id="at-scale"><div class="wrap"><p class="eyebrow">Part 10 · At production scale</p><h2>More evidence does not automatically mean a clearer explanation.</h2><p class="section-intro">The worked case had one browser, one API and one nearby log. A service spread across many machines can produce sampled traces, aggregated metrics, differently timestamped logs and concurrent interventions. Not every system has all these properties. Identify which apply before interpreting the data. The diagnostic loop still asks what each observation supports, what it omits and what action would distinguish alternatives.</p>
+<div class="grid two">
+<article class="card"><div class="kicker">Failure mode · Averages hide a broken minority</div><h3>A healthy average can conceal a failing cohort</h3><p><strong>Mechanism:</strong> aggregating healthy and broken groups can dilute a regional or version-specific error. In an illustrative population, a group carrying 3% of requests could fail completely while the global error rate is 3%. Whether that meets an SLO depends on the specified target. An acceptable mean latency can coexist with a long slow tail.</p><p><strong>What operators see:</strong> a subgroup reports failures while a broad dashboard looks acceptable. “Intermittent” describes the observation, not its cause.</p><p><strong>Control and cost:</strong> compare relevant version/location/client cohorts and latency percentiles with user outcomes. Choose useful metric dimensions with a cardinality budget; not every signal needs every label. More detailed logs and traces still carry privacy and retention costs. State the population covered rather than calling the whole fleet healthy.</p></article>
+<article class="card"><div class="kicker">Failure mode · Clocks and collection delays</div><h3>A timestamp sort is not automatically causal order</h3><p><strong>Mechanism:</strong> host clocks can differ, and collection time can lag event time. Two retained events can appear reversed when sorted by wall-clock timestamps. A trace ID identifies related operations; it is not a timestamp or a value to sort for chronology.</p><p><strong>What operators see:</strong> apparently earlier database errors are used to dismiss a deployment as a contributor, without checking clock uncertainty or which timestamp the tool displays.</p><p><strong>Control and cost:</strong> correlate by trace/request ID, inspect parent-child span relationships and recorded send/receive events, and retain clock uncertainty. Parent links describe causal structure, not a total order of concurrent sibling spans. Maintain time synchronization and distinguish event time from ingestion time. W3C context propagation does not repair clocks or guarantee every span reached storage.</p></article>
+<article class="card"><div class="kicker">Failure mode · Missing or sampled evidence</div><h3>No matching trace is an observation, not an explanation</h3><p><strong>Mechanism:</strong> head sampling decides before the operation's full outcome is known. A uniform probability sampler can drop rare errors like successes; other policies can use attributes already available at the start, so equal loss is not universal. Tail sampling can prefer errors or slow traces using later observations, but requires buffering and a decision policy. It cannot recover spans already dropped upstream.</p><p><strong>What operators see:</strong> a request ID has no retained trace, or an available trace is incomplete. Possible causes include sampling, missing instrumentation, export failure, retention expiry, collection delay or a wrong search scope.</p><p><strong>Control and cost:</strong> record the missing evidence as <strong>unknown</strong> until sampling or another loss mechanism is demonstrated. Inspect sampler/exporter configuration and health. Tail sampling consumes resources and can be overwhelmed; it does not guarantee every error survives. Keep suitable high-cardinality detail in access-controlled logs/traces rather than creating one metric time series per user.</p></article>
+<article class="card"><div class="kicker">Failure mode · Low-value alerts</div><h3>Frequent non-actionable pages consume attention</h3><p><strong>Mechanism:</strong> internal events such as one process restart or high CPU may not mean users are failing. Paging indiscriminately on them can produce noise and reduce responder trust. Internal signals remain valuable for diagnosis and for actionable impending-risk alerts; they are not useless merely because they are not user symptoms.</p><p><strong>What operators see:</strong> many pages require no action while consequential failures are first reported by customers.</p><p><strong>Control and cost:</strong> connect paging to actionable user-visible reliability goals. The SRE Workbook gives multiwindow burn-rate examples, not universal thresholds. For its 30-day window, 720 hours total, a 14.4× burn rate for one hour corresponds to 14.4/720 = 2% of the budget under comparable request rates. Long/short windows balance sustained consumption and recent activity; traffic volume and business needs affect the choice.</p></article>
+<article class="card"><div class="kicker">Failure mode · Parallel interventions</div><h3>Several repairs can confound the outcome</h3><p><strong>Mechanism:</strong> one responder restarts, another rolls back and another changes a flag. Each action can affect the others' observations. Recovery may establish that the combination helped without identifying each contribution.</p><p><strong>What operators see:</strong> “something fixed it,” an uncertain causal account and a runbook retaining unnecessary changes.</p><p><strong>Control and cost:</strong> Google's incident-management model separates coordination, operations and communications responsibilities. Adapt those roles to team size and authorization policy; do not imply one person must personally type every command. Keep a shared action/observation log, coordinate state changes and distinguish urgent mitigation from a controlled experiment. Coordination costs effort but makes parallel work interpretable.</p></article>
+<article class="card"><div class="kicker">Failure mode · Recovery discards useful state</div><h3>Restoration can make later diagnosis harder</h3><p><strong>Mechanism:</strong> restarting or replacing an instance can discard memory, live connections and loaded settings. Persisted logs, source revisions or dumps may survive; a restart does not necessarily erase every crash record or make cause analysis impossible.</p><p><strong>What operators see:</strong> service returns, but a useful failed-state observation is no longer available. State that limitation instead of filling the gap with a confident story.</p><p><strong>Control and cost:</strong> under an authorized, rehearsed plan, capture inexpensive logs or isolate an affected instance without user traffic when safe. Dumps may contain credentials or personal data and require suitable access, retention and handling. Isolation can itself cost capacity. Never preserve a failing instance at the expense of urgent user safety; record what could not be collected and investigate surviving evidence.</p></article>
+</div>
+<div class="callout-warn"><strong>Scope every “healthy” claim:</strong> which population, time window, instrument and collection policy? Evidence may support a fleet-level statement if its sampling and coverage justify that statement; one successful manual request does not automatically provide that coverage.</div>
+<h3 style="margin-top:42px">The same discipline at three scales</h3><div class="table-wrap"><table><thead><tr><th>Question</th><th>One laptop</th><th>One production service</th><th>Fleet, regions, many teams</th></tr></thead><tbody>
+<tr><td>Where is evidence?</td><td>Browser and terminal</td><td>Service logs and metrics</td><td>Multiple pipelines with explicit collection/retention limits</td></tr>
+<tr><td>How is order inferred?</td><td>Observed local sequence</td><td>Timestamps with clock context</td><td>Correlation IDs, parent-child relationships and timestamp uncertainty</td></tr>
+<tr><td>What does healthy mean?</td><td>This action worked</td><td>Specified outcomes within targets</td><td>Evidence against the defined SLO population and relevant cohorts</td></tr>
+<tr><td>Who changes state?</td><td>The authorized lab operator</td><td>Authorized responders</td><td>Coordinated roles and a shared record</td></tr>
+<tr><td>What can be preserved?</td><td>Available state before restart</td><td>Relevant logs and versions</td><td>Safe, authorized captures; explicit gaps rather than assumed completeness</td></tr>
+</tbody></table></div><div class="callout-good"><strong>The transferable rule:</strong> record the bounded cause if demonstrated, or “restored; cause unknown” if not. Include evidence coverage, authorized mitigation, repeated user verification and the tests or observations not obtained. A missing trace cannot silently become proof of sampling or proof an event never happened.</div></div></section>
+<section class="section" id="practice"><div class="wrap"><p class="eyebrow">Part 11 · Practice the reasoning</p><h2>Each answer should name the rung, the vantage point, or the verb.</h2><p class="section-intro">These are the lesson’s exit-assessment questions, plus one at fleet scale. Choose an answer before reading the explanation. The aim is not to spot the “right” phrase, but to say exactly what the evidence does and does not establish.</p><div class="quiz" data-quiz="1"><h3>Scenario 1 · A command exits with code 0</h3><p>A CLI command returns exit code 0 after applying configuration. Is the service healthy?</p><div class="options"><button class="option" data-correct="false">A. Yes. Exit code 0 means success.</button><button class="option" data-correct="true">B. Not established. Exit 0 proves the command completed without reporting an error; it is rung 1–2 evidence at most.</button><button class="option" data-correct="false">C. No. Exit codes are unreliable and should be ignored.</button><button class="option" data-correct="false">D. Yes, if the command also printed “configured.”</button></div><div class="answer"><strong>Reasoning:</strong> the command’s success is evidence about the command: the configuration was accepted. It says nothing about whether a process loaded it, a listener is reachable, the route answers, or a user can complete the flow. It is useful evidence—just not evidence for the claim “healthy.” Climb the ladder with a check that reaches the rung you need.</div></div><div class="quiz" data-quiz="2"><h3>Scenario 2 · curl works, the browser does not</h3><p><code>curl</code> to the FastAPI endpoint succeeds, but browser <code>fetch</code> fails with a CORS message in the Console. Does that prove the API is down?</p><div class="options"><button class="option" data-correct="false">A. Yes. The browser is the real client, so its failure is decisive.</button><button class="option" data-correct="false">B. No, so the browser must be misconfigured and can be ignored.</button><button class="option" data-correct="true">C. No. The API answered curl; CORS is a browser-enforced read rule. The next check is whether the response carries an allow header matching the page’s origin.</button><button class="option" data-correct="false">D. Set CORS to allow every origin; if that fixes it, the API was fine.</button></div><div class="answer"><strong>Reasoning:</strong> a CORS error usually means a response arrived and the browser refused to let the page read it. The server can be up and reachable. The discriminating observation is the response’s <code>Access-Control-Allow-Origin</code> header compared with the page origin. Option D is an intervention that adds a security risk to answer a question a read-only check could answer.</div></div><div class="quiz" data-quiz="3"><h3>Scenario 3 · Restart, and it works</h3><p>The API process is restarted and the UI now works. Can the incident be closed with “resolved by restart” as the root cause?</p><div class="options"><button class="option" data-correct="false">A. Yes. The user-visible symptom is gone.</button><button class="option" data-correct="true">B. No. The restart was a mitigation. The cause—invalid config, a crash on a request, resource pressure, or a missing dependency—still needs evidence.</button><button class="option" data-correct="false">C. Yes, but add “monitor closely” as prevention.</button><button class="option" data-correct="false">D. No. Restarts should never be used during incidents.</button></div><div class="answer"><strong>Reasoning:</strong> restoring service is good and often right. But a restart resets state without explaining why the process stopped. Each candidate cause leaves different evidence (a start-up error, a traceback, an out-of-memory kill record, an import error). Record the mitigation, keep the cause field open, and investigate. “Monitor closely” is not a specific prevention.</div></div><div class="quiz" data-quiz="4"><h3>Scenario 4 · A lint-clean workflow</h3><p>An AI-created workflow asks for broad write permission. It uses correct YAML and passes linting. Should it merge?</p><div class="options"><button class="option" data-correct="false">A. Yes. Linting is the review.</button><button class="option" data-correct="false">B. Yes, because the assistant is usually right about workflows.</button><button class="option" data-correct="false">C. No. AI-generated workflows should never be merged.</button><button class="option" data-correct="true">D. Not on that basis. Syntax is one gate; permissions, secrets, failure behavior, observability, reversibility, and verification still need answers—and broad write permission fails least privilege.</button></div><div class="answer"><strong>Reasoning:</strong> lint passing establishes rung 1 for the workflow file. The review matrix asks whether the change is safe to run with real authority. Narrow the permissions to what the job needs, check where secrets flow, and write down how you will verify the outcome. Rejecting all generated workflows (C) is a blanket rule, not a review.</div></div><div class="quiz" data-quiz="5"><h3>Scenario 5 · The fleet dashboard is green</h3><p>Users in one region report errors. The fleet-wide error rate is 0.4%, within its target. A teammate says “metrics are fine, it must be their network.” What is the strongest next step?</p><div class="options"><button class="option" data-correct="false">A. Close it: the SLO metric is within target.</button><button class="option" data-correct="true">B. Break the error rate down by region, version, and instance before concluding anything; a fully broken cohort can hide inside a healthy average.</button><button class="option" data-correct="false">C. Roll back the latest deploy everywhere, just in case.</button><button class="option" data-correct="false">D. Ask the users to clear their caches.</button></div><div class="answer"><strong>Reasoning:</strong> the global rate is evidence about the whole population, not about the region in question. A per-cohort breakdown is read-only, cheap, and discriminating: it separates “their network” from “our instances in that region” from “one bad version.” Rolling back everywhere is a heavy intervention that may destroy the evidence.</div></div><div class="exit card" style="margin-top:30px"><p class="eyebrow">Exit check</p><h3>Write one bounded root-cause statement.</h3><p>Use this shape: “For <em>[scope]</em>, <em>[condition]</em> caused <em>[symptom]</em>, shown by <em>[evidence from which vantage point]</em>. Not yet tested: <em>[what remains]</em>.”</p><textarea id="exit-input" aria-label="Write your own bounded root-cause statement" placeholder="For this run on the local dev stack, …"></textarea><button class="btn" id="show-example" type="button" aria-pressed="false">Show a strong example</button><p id="exit-example" class="answer">“For this run on the local dev stack, the frontend’s configured API base URL pointed at port 8001 while the API listened on 8000, so the status card’s request was refused—shown by the browser Network panel (request to :8001), curl from the terminal (200 on :8000), and an API access log with no line at the click time. Not yet tested: other browsers, and how the env file came to contain 8001.”</p></div></div></section>
+<section class="section alt" id="glossary"><div class="wrap"><p class="eyebrow">Reference · Plain-English glossary</p><h2>Every term, without the assumed knowledge.</h2><p class="section-intro">Use this whenever a word feels like jargon. Search by term or phrase. The goal is not memorization; it is knowing exactly what each word claims in the current situation.</p><div class="glossary-tools"><input type="search" id="glossary-search" placeholder="Search terms: hypothesis, burn rate, CORS…" aria-label="Search glossary"><span class="small" id="glossary-count">32 terms</span></div><div class="glossary" id="glossary-list">
+<details data-term="observation evidence signal"><summary>Observation</summary><p>A directly recorded signal with a time and scope: which tool, from which vantage point, at what moment. Preserve its actual result before interpreting it.</p></details>
+<details data-term="inference conclusion reasoning"><summary>Inference</summary><p>A conclusion drawn from observations. It goes beyond the recorded signals and can be wrong even when those signals are accurate. Label it accordingly.</p></details>
+<details data-term="hypothesis explanation theory"><summary>Hypothesis</summary><p>A testable explanation that predicts observations a discriminating check might contradict. Surviving one check does not make it the only possible explanation.</p></details>
+<details data-term="falsifiable testable prediction"><summary>Falsifiable</summary><p>Able to be contradicted by a possible observation. “The browser requests port 8001” is testable; “something with networking” is too vague to guide a useful check.</p></details>
+<details data-term="discriminating test experiment"><summary>Discriminating test</summary><p>A check with different predicted results under different hypotheses. If both predict the same result, that check alone cannot distinguish them.</p></details>
+<details data-term="root cause bounded cause"><summary>Root cause (bounded)</summary><p>A causal condition demonstrated within the investigated run, environment and version. Multiple conditions may contribute; preserve what the investigation did not establish.</p></details>
+<details data-term="mitigation restart rollback"><summary>Mitigation</summary><p>An action reducing harm without necessarily removing or establishing the cause. Restart or rollback can be appropriate while the cause remains unknown.</p></details>
+<details data-term="fix correction change"><summary>Fix</summary><p>A correction addressing a demonstrated condition. A narrowly scoped change is usually easier to verify, but safety and dependencies determine the appropriate scope.</p></details>
+<details data-term="verification verify check"><summary>Verification</summary><p>Evidence matching the required behavior, collected from the relevant caller and environment, with regression checks and untested conditions stated.</p></details>
+<details data-term="prevention regression control"><summary>Prevention</summary><p>A specific test, validator, alert, runbook or ownership improvement intended to reduce recurrence or impact. Give it an owner and observable completion criterion.</p></details>
+<details data-term="system state ladder rung"><summary>System-state ladder</summary><p>The course's seven-rung teaching model, from artifact presence to required user outcome. Lower-level evidence alone does not establish higher-level behavior.</p></details>
+<details data-term="vantage point perspective where"><summary>Vantage point</summary><p>The caller and location of an observation: browser, shell, container, service or region. Different locations can have different routes and policies.</p></details>
+<details data-term="listener port bind socket"><summary>Listener</summary><p>A network endpoint accepting connections for a program. Process existence alone does not show the expected interface/port is listening or reachable.</p></details>
+<details data-term="access log request log uvicorn"><summary>Access log</summary><p>A server's request-handling record under its logging configuration. One logged control request shows some logging works, not complete coverage; missing lines need source, timing, filtering and retention context.</p></details>
+<details data-term="curl http client command"><summary>curl -i</summary><p>A terminal HTTP request with response headers included. It tests from the shell's context and does not enforce browser CORS or verify React rendering.</p></details>
+<details data-term="network panel devtools browser"><summary>Network panel</summary><p>A browser tool recording requests and responses, including URL, method, status, headers and timing where available. Recording state and filters affect what you see.</p></details>
+<details data-term="cors cross origin browser"><summary>CORS</summary><p>A browser cross-origin response-reading mechanism using server headers. It is not authentication and a failed browser read does not by itself establish server unavailability.</p></details>
+<details data-term="vite env base url import.meta.env"><summary>Vite environment variable</summary><p>A setting read at startup/build time. Inherited environment takes precedence over env files; VITE_-prefixed values exposed to client code must not contain secrets.</p></details>
+<details data-term="exit code status zero"><summary>Exit code</summary><p>A program's completion status; zero conventionally reports success according to that program's semantics. Determine which properties the command actually checked.</p></details>
+<details data-term="incident note postmortem record"><summary>Incident note</summary><p>A resumable account of symptom, observations, hypotheses, tests, bounded cause, mitigation, verification, uncertainty, prevention and unexecuted checks.</p></details>
+<details data-term="tests not executed absence of evidence"><summary>Tests not executed</summary><p>Checks not run, explicitly recorded so a later reader does not mistake missing evidence for success.</p></details>
+<details data-term="confounding multiple changes"><summary>Confounding</summary><p>Multiple changing conditions obscure which caused an outcome. Controlled comparisons help separate effects; production mitigation may require broader action with that uncertainty retained.</p></details>
+<details data-term="cohort population breakdown"><summary>Cohort</summary><p>A group sharing a property such as version or region. Aggregate results can hide a failing group, so choose relevant comparisons.</p></details>
+<details data-term="percentile p99 latency tail"><summary>Percentile (p95, p99)</summary><p>A threshold in a distribution: approximately 99% of observations lie at or below p99. Estimates and ties depend on measurement method; it is not every user's latency.</p></details>
+<details data-term="clock skew time synchronization"><summary>Clock skew</summary><p>Difference between clocks. Together with collection delay, it can make a timestamp-sorted account misrepresent event order.</p></details>
+<details data-term="trace id traceparent distributed tracing"><summary>Trace ID</summary><p>A correlation identifier propagated through trace context. Join retained spans using it and examine parent-child relationships; the ID is not a sortable clock or proof of a complete trace.</p></details>
+<details data-term="sampling head tail traces"><summary>Sampling</summary><p>Selecting telemetry under a policy. Head sampling decides before the full outcome; tail sampling can use later information to prefer errors. Upstream loss, decision limits or overload can still omit errors. A missing record remains unknown until its loss mechanism is demonstrated.</p></details>
+<details data-term="cardinality metrics labels"><summary>Cardinality</summary><p>The number of distinct values or combinations represented. Metric-label combinations create time series; unbounded user identifiers can consume substantial resources.</p></details>
+<details data-term="slo error budget burn rate"><summary>SLO and burn rate</summary><p>An SLO is a reliability target for a defined measure/population/window. Burn rate compares current failure consumption with the rate allowed by its error budget.</p></details>
+<details data-term="alert fatigue paging"><summary>Alert fatigue</summary><p>Frequent non-actionable alerts can reduce responder attention. Prefer actionable signals tied to user harm or an important impending risk.</p></details>
+<details data-term="incident commander roles"><summary>Incident commander</summary><p>A coordinating role in an incident process, organizing responsibilities, priorities and communication. Authorization and change coordination must match the organization's procedure.</p></details>
+<details data-term="least privilege permissions token"><summary>Least privilege</summary><p>Grant only the authority the task requires, limiting damage from mistakes or compromise. Syntax validity does not justify broad permissions.</p></details>
+</div></div></section>
+<section class="section" id="sources"><div class="wrap"><p class="eyebrow">Further reading · Authoritative references</p><h2>Go deeper when you are ready.</h2><p class="section-intro">The lesson stands on its own. These references give formal detail on incident practice, monitoring, alerting, tracing, and the browser and build rules used in the worked case.</p><ul class="source-list"><li><a href="https://sre.google/workbook/postmortem-culture/" target="_blank" rel="noopener noreferrer">Google SRE Workbook · Postmortem Culture</a><p>Preserving incident facts and turning them into actionable, blameless improvements.</p></li><li><a href="https://sre.google/sre-book/monitoring-distributed-systems/" target="_blank" rel="noopener noreferrer">Google SRE Book · Monitoring Distributed Systems</a><p>Symptoms versus causes, and which signals reveal what a distributed system is doing.</p></li><li><a href="https://sre.google/workbook/alerting-on-slos/" target="_blank" rel="noopener noreferrer">Google SRE Workbook · Alerting on SLOs</a><p>Burn-rate and multiwindow alerting on service level objectives.</p></li><li><a href="https://sre.google/sre-book/managing-incidents/" target="_blank" rel="noopener noreferrer">Google SRE Book · Managing Incidents</a><p>Incident command roles, a single working record, and coordinated response.</p></li><li><a href="https://opentelemetry.io/docs/concepts/sampling/" target="_blank" rel="noopener noreferrer">OpenTelemetry · Sampling</a><p>Head and tail sampling, and what each keeps or drops.</p></li><li><a href="https://www.w3.org/TR/trace-context/" target="_blank" rel="noopener noreferrer">W3C · Trace Context</a><p>The traceparent header for propagating request identity across services.</p></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS" target="_blank" rel="noopener noreferrer">MDN · Cross-Origin Resource Sharing (CORS)</a><p>How browsers decide whether a page may read a cross-origin response.</p></li><li><a href="https://fastapi.tiangolo.com/tutorial/cors/" target="_blank" rel="noopener noreferrer">FastAPI · CORS</a><p>Configuring allowed origins in the starter app’s framework.</p></li><li><a href="https://vite.dev/guide/env-and-mode" target="_blank" rel="noopener noreferrer">Vite · Env Variables and Modes</a><p>When Vite reads env files, and why VITE_ variables must not hold secrets.</p></li><li><a href="https://docs.github.com/en/actions/reference/security/secure-use" target="_blank" rel="noopener noreferrer">GitHub Docs · Secure use reference for GitHub Actions</a><p>Least-privilege tokens, secret handling, and third-party action risks.</p></li></ul><div class="note"><strong>The lesson in one sentence:</strong> label every claim with its verb, know which rung and vantage point each check reaches, change one thing at a time, call mitigations mitigations, and write down what you did not test.</div></div></section>
+<div class="wrap learning-note" id="teaching-handoff"><h2>Mapped model and its limits</h2><p>A parcel marked “delivered” but missing from the recipient maps to a claimed success with an unmet outcome. A time-stamped scan maps to an observation; “next building?” to a hypothesis; comparing label and destination to a discriminating test; redirecting and confirming receipt to correction and user verification. Network requests can be copied, retried and cached, and logs can be incomplete. This analogy labels claims, not packet behavior.</p><h3>Changed condition</h3><p>Predict: the env file says 8000 now, but Network still shows 8001. Did editing the file prove the running page changed? No: Vite loads env files at startup and inherited environment takes priority. Inspect only the relevant non-secret setting, restart the right process and reload. If the correct URL still fails, the port diagnosis does not cover the remaining fault.</p><h3>Transfer and lab handoff</h3><p>A global error rate meets its target while customers in one region cannot order. Predict what a region-by-version breakdown could reveal; choose a low-risk observation and a result that would contradict your favored explanation.</p><p>Carry the <a href="../../week-01-groundops/labs/GRO-LAB01-run-and-trace-the-request.md">GRO-LAB01</a> baseline into <a href="../../week-01-groundops/labs/GRO-LAB02-diagnose-the-broken-request-path.md">GRO-LAB02</a>. Record prediction → evidence → bounded cause → one correction → direct and browser recheck. Hand the incident note, exact source/artifact identifier if available, unknowns and owned prevention action to Week 2.</p><p><strong>Scale calculation assumptions:</strong> 30 days × 24 hours = 720 hours; a 14.4× burn rate for one hour consumes 14.4/720 = 2% of that window's error budget under comparable request rates. This illustrates the SRE Workbook, not a measured lab threshold or universal paging rule. IDs correlate recorded operations; they do not repair clocks or guarantee all spans were retained.</p></div>
+<div class="wrap" id="extension-sources"><p class="small">Extension source details: <a href="https://opentelemetry.io/docs/concepts/sampling/">OpenTelemetry sampling limitations and resource costs</a>; <a href="https://opentelemetry.io/docs/concepts/signals/traces/">OpenTelemetry span context and relationships</a>; <a href="https://www.w3.org/TR/trace-context/">W3C trace correlation and parent-id semantics</a>; <a href="https://prometheus.io/docs/practices/instrumentation/">Prometheus label-cardinality costs</a>; <a href="https://raw.githubusercontent.com/Kludex/uvicorn/main/docs/server-behavior.md">Uvicorn exception handling (official repository)</a>. These explain mechanisms and trade-offs, not measured behavior of this lab.</p></div>
+</main>
+<footer class="footer"><div class="wrap footer-inner"><span><strong>VOIDINFINITY × GROUNDOPS</strong> · GRO-L03 · Evidence-First Operations</span><span>Observe before you intervene. Bound every claim to its evidence.</span><span><a href="#top">Back to top ↑</a></span></div>
+<nav class="lesson-pager" aria-label="Lesson navigation">
+  <a href="GRO-L02-trace-the-full-stack-request.html">
+    <span class="pager-dir">Previous</span>
+    <span class="pager-title">GRO-L02 · Trace the Full-Stack Request</span>
+  </a>
+  <a class="pager-next" href="../week-02-gitcore-gitgraph/GIT-L01-what-does-a-git-object-id-identify.html">
+    <span class="pager-dir">Next &rarr;</span>
+    <span class="pager-title">GIT-L01 · What Does a Git Object ID Identify?</span>
+  </a>
+</nav></footer>
+<script>
+const flowContent=[
+{label:'Loop step 1 · Symptom',title:'State the symptom exactly',body:'Write down the user-visible behavior, the time, the environment, and the version if you know it. “The status card shows ‘could not fetch status’ at 10:14 on the local dev stack” can be compared against evidence. “The app is broken” cannot. The symptom is the only thing you are certain of at the start, so record it precisely before it changes.',example:'Possible failure: the symptom is paraphrased (“API is down”), and the paraphrase smuggles in a cause before any evidence exists.'},
+{label:'Loop step 2 · Locate the boundary',title:'Find the hand-off that failed',body:'GRO-L02 showed the request crossing boundaries: browser, address, network, listener, route, response, CORS read, render. Ask which boundary is the last one known to work and the first one known to fail. You are narrowing the search space before forming any theory.',example:'Possible failure: skipping straight to the backend because “backend problems are common,” when the request never left the browser.'},
+{label:'Loop step 3 · Observe',title:'Look without changing state',body:'Read-only observations—the Network panel, logs, process status, configuration, the running version—preserve the evidence. A restart, rebuild, or cache clear can erase exactly the state that would have explained the failure: in-memory errors, open connections, a stale bundle, a crashed process’s exit code.',example:'Possible failure: someone restarts the dev server “to be safe” and the stale environment value that caused the fault silently disappears with no record.'},
+{label:'Loop step 4 · Hypothesis',title:'Form a falsifiable hypothesis',body:'A hypothesis must make a concrete prediction that a test could prove wrong. “Something is wrong with networking” predicts nothing specific. “The React request uses port 8001, but the known API listener is on port 8000” predicts what the Network panel, the configuration, and the backend log will each show.',example:'Possible failure: a hypothesis so broad that every result “fits,” so no test can ever eliminate it.'},
+{label:'Loop step 5 · Discriminating test',title:'Choose a test that separates hypotheses',body:'A discriminating test has different expected results under different hypotheses. Before running it, write what you expect to see if each hypothesis is true. If every hypothesis predicts the same result, the test teaches you nothing, however reassuring it feels.',example:'Possible failure: running curl from the terminal to “prove the API is fine” when the open question is what the browser requested—curl cannot see the browser’s URL.'},
+{label:'Loop step 6 · Compare',title:'Compare the result with the prediction',body:'Hold the result against the written prediction. Matching supports the hypothesis; it does not prove it beyond the scope of the test. A mismatch is progress: it eliminates a hypothesis and sends you back to step 4 with less to search.',example:'Possible failure: explaining away a mismatching result (“the log was probably just slow”) instead of letting it falsify the favorite theory.'},
+{label:'Loop step 7 · Bounded cause',title:'Identify the cause in the investigated scope',body:'State the cause only as widely as the evidence supports: which run, which environment, which version, which boundary. Then ask why that condition was possible—a missing validation, an unclear default—because that answer feeds prevention.',example:'Possible failure: “root cause: networking” when the evidence showed one wrong port in one config file for one run.'},
+{label:'Loop step 8 · Smallest safe correction',title:'Make the smallest change that addresses the cause',body:'Change one thing, the thing the evidence pointed at. If you change the port, the timeout, the CORS policy, and restart everything together, you cannot tell which change mattered, and you may have introduced new risk (a wide-open CORS policy) to fix a problem that never involved it.',example:'Possible failure: “fixed it” by changing four settings; two weeks later nobody knows which change was load-bearing.'},
+{label:'Loop step 9 · Verify',title:'Verify the intended and user-visible behavior',body:'Repeat the exact check that originally failed, from the same vantage point—the browser, not just curl. Then check what the fix might have broken. Tie the verification to the version and time you checked.',example:'Possible failure: verifying with curl that the API answers, while the browser is still loading an old bundle that points at the wrong port.'},
+{label:'Loop step 10 · Record prevention',title:'Record what happened and what will prevent recurrence',body:'Write the incident note: observations with sources, hypotheses considered, tests and results, bounded cause, fix, verification, remaining uncertainty, tests not executed, and one specific prevention action with an owner. Specific means a test, validator, alert, or runbook—not “be more careful.”',example:'Possible failure: the repair works, nothing is written down, and the next person hits the same wrong-port default next week.'}
+];
+document.querySelectorAll('[data-flow]').forEach(btn=>btn.addEventListener('click',()=>{const d=flowContent[Number(btn.dataset.flow)];document.querySelectorAll('[data-flow]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));document.querySelector('#flow-detail').innerHTML=`<span class="label">${d.label}</span><h3>${d.title}</h3><p>${d.body}</p><div class="example"><strong>Example:</strong> ${d.example.replace(/^Possible failure: /,'')}</div>`;}));
+const stageContent={artifact:{label:'Rung 1 · Artifact present',title:'The required code or configuration exists',body:'There is a thing you can point at: a file diff, a commit, a built bundle, an image in a registry. Evidence: the diff, the commit ID, registry metadata. This is the cheapest rung to check and the one most often mistaken for the top of the ladder.',example:'“The env file says port 8000, so the browser uses 8000.” The file can be correct while the running dev server still serves values it read before the edit.'},process:{label:'Rung 2 · Process started',title:'A runtime process is alive',body:'Something is executing: a uvicorn process, a container whose status is “running,” a Pod in the Running phase. Evidence: process output, the process table, container status. A process can be alive while it listens on the wrong port, waits on a dependency, or answers every request with an error.',example:'“uvicorn is running, so the route is reachable.” It may be bound to 127.0.0.1 when the caller is in another network namespace, or to a different port.'},listener:{label:'Rung 3 · Listener reachable',title:'A caller can connect to the host and port',body:'From a specific vantage point, a TCP connection to the address succeeds. Evidence: a successful connection or a direct HTTP check. Reachability is always “reachable from where”: your terminal, the browser, another container, another region.',example:'“The port is open, so the right behavior is served.” Another program may own the port, or the listener may be an old process still running stale code.'},route:{label:'Rung 4 · Route responds',title:'The requested method and path return a response',body:'GET /api/status returns a status line, headers, and a body. Evidence: curl -i, an API test, the response body. A response exists. Whether it is the right response is the next rung.',example:'“The route returns 200, so every response is correct.” A 200 with an error message in the body, or stale data from a cache, is still a 200.'},contract:{label:'Rung 5 · Contract holds',title:'Responses match the documented expectations',body:'Status codes, JSON schema, validation behavior, and error cases match what clients were promised. Evidence: contract tests covering success and failure paths. This is where “the API works” starts to mean something a client can rely on.',example:'“The contract holds, so the browser can read it.” Browser rules such as CORS sit outside the API contract; curl does not apply them.'},e2e:{label:'Rung 6 · End-to-end path works',title:'The real client completes the path',body:'A real or representative browser makes the request, is allowed to read the response, and renders the right state. Evidence: a Network panel record plus the rendered UI, or an automated browser test. This is the first rung that proves anything about what a person sees.',example:'“It worked once in my browser, so capacity and reliability are fine.” One success says nothing about concurrency, slow dependencies, or other users’ environments.'},outcome:{label:'Rung 7 · User outcome holds',title:'The correct outcome holds under the required conditions',body:'The feature does what the user needs, under the conditions that matter: realistic data, permissions, load, failure of a dependency, the deployed environment. Evidence: acceptance tests and product-level signals. A production-readiness claim may need further rungs for authentication, persistence, performance, resilience, accessibility, and data protection.',example:'“One happy-path test proves production readiness.” The ladder is a teaching model, not a standard; it exists to stop evidence from being stretched.'}};
+document.querySelectorAll('[data-stage]').forEach(btn=>btn.addEventListener('click',()=>{const d=stageContent[btn.dataset.stage];document.querySelectorAll('[data-stage]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));document.querySelector('#stage-detail').innerHTML=`<span class="label">${d.label}</span><h3>${d.title}</h3><p>${d.body}</p><div class="example"><strong>Example:</strong> ${d.example}</div>`;}));
+document.querySelectorAll('#evidence-board .evidence').forEach(btn=>btn.addEventListener('click',()=>{btn.setAttribute('aria-pressed',String(btn.getAttribute('aria-pressed')!=='true'));const n=document.querySelectorAll('#evidence-board .evidence[aria-pressed="true"]').length;document.querySelector('#evidence-status').innerHTML=`<strong>${n} of ${document.querySelectorAll('#evidence-board .evidence').length} opened.</strong> Each item is evidence from one vantage point at one moment. Together, the browser and terminal observations disagree about the port—and that disagreement, not any single item, is what points to the cause.`;}));
+document.querySelectorAll('.quiz').forEach(q=>{q.querySelectorAll('.option').forEach(btn=>btn.addEventListener('click',()=>{if(q.dataset.answered)return;q.dataset.answered='true';q.querySelectorAll('.option').forEach(o=>{o.disabled=true;if(o.dataset.correct==='true')o.classList.add('correct');else if(o===btn)o.classList.add('incorrect')});q.querySelector('.answer').classList.add('show')}));});
+document.querySelectorAll('.quiz').forEach(q=>{const answer=q.querySelector('.answer');answer.setAttribute('role','status');answer.setAttribute('aria-live','polite');const reset=document.createElement('button');reset.type='button';reset.className='button quiz-reset';reset.textContent='Reset this question';reset.addEventListener('click',()=>{delete q.dataset.answered;q.querySelectorAll('.option').forEach(o=>{o.disabled=false;o.classList.remove('correct','incorrect')});answer.classList.remove('show');q.querySelector('.option').focus()});q.append(reset)});
+document.querySelector('#show-example').addEventListener('click',e=>{const a=document.querySelector('#exit-example');a.classList.toggle('show');const shown=a.classList.contains('show');e.currentTarget.setAttribute('aria-pressed',String(shown));e.currentTarget.textContent=shown?'Hide example':'Show a strong example'});
+const search=document.querySelector('#glossary-search');search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();let count=0;document.querySelectorAll('#glossary-list details').forEach(d=>{const match=!q||(`${d.dataset.term} ${d.querySelector('summary').textContent} ${d.querySelector('p').textContent}`).toLowerCase().includes(q);d.hidden=!match;if(match)count++});document.querySelector('#glossary-count').textContent=`${count} term${count===1?'':'s'}`});
+const progress=document.querySelector('#progress');function updateProgress(){const h=document.documentElement.scrollHeight-innerHeight;progress.style.width=(h>0?Math.max(0,Math.min(1,scrollY/h)):1)*100+'%'}window.addEventListener('scroll',updateProgress,{passive:true});window.addEventListener('resize',updateProgress);updateProgress();
+</script>
+<script>
+const worksheetInputs=[...document.querySelectorAll('#worksheet-grid input')];
+function renderWorksheet(){const filled=worksheetInputs.filter(i=>i.value.trim().length>0).length;document.querySelector('#worksheet-status').innerHTML=filled===worksheetInputs.length?`<strong>${filled} of ${worksheetInputs.length} fields filled.</strong> Leaving “tests not executed” blank is itself a claim—make sure it is true.`:`<strong>${filled} of ${worksheetInputs.length} fields filled.</strong> Write only what you observed or tested; mark every inference as an inference.`}
+worksheetInputs.forEach(i=>i.addEventListener('input',renderWorksheet));
+document.querySelector('#worksheet-clear').addEventListener('click',()=>{worksheetInputs.forEach(i=>{i.value=''});renderWorksheet();worksheetInputs[0].focus()});
+renderWorksheet();
+</script>
 </body>
 </html>
