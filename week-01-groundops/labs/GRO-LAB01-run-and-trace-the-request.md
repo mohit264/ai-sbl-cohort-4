@@ -1,274 +1,307 @@
 # GRO-LAB01 — Run the Application and Trace One Request
 
-**Planned learner time:** 90 minutes, separate from the 150-minute teaching allocation.  
-**Status:** Draft; source-checked, not approved. Exact pinned-version build and clean replay are not yet verified.  
-**Lab type:** Baseline build/run and evidence collection.  
-**Risk:** Local-only. No AWS resources, external credentials or billable cloud services are required.
+**Planned learner time:** 90 minutes, separate from the 150-minute teaching allocation. Allow **20–40 additional minutes for first-time tool/path setup**; this is not extra teaching credit.
+**Lab type:** Baseline build/run and evidence collection.
+**Risk:** Local-only. No AWS resources, external credentials or billable services.
 
-## Objective
+## What you are trying to prove
 
-Start the React frontend and FastAPI API independently, exercise one user action, and produce evidence for each boundary in the request path. The goal is not only to see a green UI; it is to explain which observation supports each claim.
+Start two separate programs: Vite serves the React page; Uvicorn runs the FastAPI API. Then follow one button click from the browser to the API and back. A page appearing is not enough: collect the request address, HTTP status, response body, browser permission header and matching server log.
 
-## Learning outcomes
+Read the [lab handbook](../../lab-handbook.md) for terminal basics and the [request-path lesson](../lessons/GRO-L02-trace-the-full-stack-request.md) for the diagram. Use [evidence-first operations](../lessons/GRO-L03-evidence-first-operations.md) when a result differs.
 
-By completion you should be able to:
+## Before starting
 
-- identify the repository component and command responsible for each process;
-- verify the Python and Node toolchains instead of assuming a prerequisite is installed;
-- start the API and frontend in separate terminals;
-- prove the API route is reachable using `curl -i`;
-- inspect the browser request URL, status and response headers;
-- explain what direct API success does and does not prove about the browser path;
-- capture a reproducible evidence record and stop processes cleanly.
+- Use Bash. On Windows use Ubuntu in WSL2, not PowerShell. In macOS Terminal, type `bash` if your current shell is zsh. Open all lab terminals in the same operating environment.
+- Required tools: `uv` **0.13.1**, Node.js **24.22.0**, npm **11.19.1**, `curl`, `lsof`, and a Chromium-based browser. The API baseline is CPython **3.14.8**, FastAPI **0.143.2**, Uvicorn **0.54.0**. See the [environment matrix](../../environment-matrix.md).
+- The supplied `starter-app/` must contain `backend/uv.lock` and `frontend/package-lock.json`. A missing lockfile is a **STOP**, not permission to generate a replacement.
+- Do not run system-wide installs or change package versions to get past an error. Missing tools require the approved setup process before this lab.
+- These instructions are interactive: run one numbered action, read its result, then continue. Do not paste the whole page as a script. A **STOP** means do not run later actions until the discrepancy is resolved.
 
-## Prerequisites
+## Your workspace and evidence
 
-- Bash shell. On Windows use Ubuntu in WSL2 for the lab; do not run half the commands in PowerShell and half in Bash.
-- Python tooling: `uv`. The source-checked baseline is CPython 3.14.8.
-- Node.js 24.22.0 with npm 11.19.1 as proposed in `environment-matrix.md`.
-- A current Chromium-based browser with DevTools.
-- `curl` available in the shell.
-- The `starter-app/` folder in this content bundle.
-- Permission to create a working copy in a writable local directory. Record the absolute path so separate terminal sessions use the same project.
+Use three terminal tabs/windows and name them if your terminal permits:
 
-> **Reproducibility status:** this draft includes exact direct dependency versions but not the generated Python and npm lockfiles. The first local run resolves and writes lockfiles. A course release must build successfully, commit `uv.lock` and `package-lock.json`, and change clean setup to `uv sync --locked` and `npm ci`. Do not describe this draft as a fully locked/replay-verified release yet.
+| Name in this lab | Directory after setup | Job |
+|---|---|---|
+| **API** | `groundops-week-01/backend` | Runs Uvicorn; stays occupied |
+| **CHECKS** | `groundops-week-01` | Runs short checks and collects evidence |
+| **WEB** | `groundops-week-01/frontend` | Runs Vite; stays occupied |
 
-## Timebox
+An occupied terminal has no prompt because its server is still running. Do not type another command into it. `Ctrl+C` stops that terminal's server and returns the prompt; it does not stop the other server.
 
-| Step | Time |
+Create a text document **outside the application folder**, for example `GRO-LAB01-evidence.txt` in your course notes. Paste actual commands and outputs after each step. Save screenshots beside it, not in the source tree. The names below are suggested evidence filenames, not shell commands.
+
+| Work | Original timebox |
 |---|---:|
-| 1. Inspect toolchain and starter structure | 10 min |
-| 2. Resolve dependencies and start the API | 20 min |
-| 3. Start the frontend | 15 min |
-| 4. Verify the API directly | 10 min |
-| 5. Trace the browser request | 20 min |
-| 6. Record evidence and clean up | 15 min |
+| Toolchain and starter inspection | 10 min |
+| API setup/run | 20 min |
+| Frontend setup/run | 15 min |
+| Direct API checks | 10 min |
+| Browser trace | 20 min |
+| Evidence and cleanup | 15 min |
 
-## Step 1 — Create your working copy
+## 1. Find the supplied files and make a working copy
 
-Choose a writable working directory that contains the supplied `starter-app/` folder. In the terminal, navigate to that parent directory first. Confirm you are in the expected location:
+1. In **API**, navigate to the folder that directly contains `starter-app/`: open `students/` under the course root (the outer repository or extracted student-pack folder). You need neither `instructors/` nor course Git metadata. Type `cd ` (with a trailing space), then a quoted absolute folder path from your file manager, and press Enter. For example, replace the example path before running:
 
-```bash
-pwd
-test -d starter-app && echo 'starter-app found'
-```
+   ```bash
+   cd "/absolute/path/to/course-root/students"
+   pwd
+   ls
+   ```
 
-If the second command does not print `starter-app found`, stop and navigate to the directory that actually contains the `starter-app/` folder; do not run the copy command from an unknown location. Then create the working copy:
+   `cd` changes directory; `pwd` prints it; `ls` lists its contents. Expect to see `starter-app` and week folders. If not, STOP and select the correct folder.
 
-```bash
-cp -R starter-app groundops-week-01
-cd groundops-week-01
-pwd
-find . -maxdepth 3 -type f -not -path '*/node_modules/*' -not -path '*/.venv/*' | sort
-```
+2. Check the source and destination **before copying**:
 
-Record the absolute directory printed by `pwd`. You will need it when opening separate terminal windows below. This prevents an easy novice mistake: assuming that every new terminal starts in the same directory.
+   ```bash
+   test -f starter-app/backend/uv.lock && test -f starter-app/frontend/package-lock.json && echo "Source lockfiles found"
+   if [ -e groundops-week-01 ]; then
+     echo "STOP: groundops-week-01 already exists; preserve it"
+   else
+     echo "Destination is available"
+   fi
+   ```
 
-Expected source paths include:
+   `test -f` checks for a file; `&&` runs the next check only after success. `[ -e ... ]` checks whether a path already exists. Continue only with **both** `Source lockfiles found` and `Destination is available`. No lockfile message means STOP. Do not copy over an existing attempt or nest a new copy inside it.
 
-```text
-./.gitignore
-./README.md
-./backend/main.py
-./backend/pyproject.toml
-./frontend/index.html
-./frontend/package.json
-./frontend/vite.config.js
-./frontend/src/App.jsx
-./frontend/src/main.jsx
-./frontend/src/style.css
-```
+3. Copy and enter the new folder:
 
-**Why:** begin from a known source tree. The `find` output is evidence of what files are actually present, not proof that they execute correctly.
+   ```bash
+   cp -R starter-app groundops-week-01
+   ```
 
-## Step 2 — Check the toolchain before running anything
+   `cp -R` copies the directory and its contents. Success is usually silent. If any copy error appears, STOP; do not use an incomplete copy.
 
-```bash
-python3 --version
-uv --version
-node --version
-npm --version
-curl --version | head -n 1
-```
+   ```bash
+   cd groundops-week-01
+   pwd
+   ls -a
+   ```
 
-Compare results against `environment-matrix.md`. If a version differs, do not quietly continue and later claim the target baseline was tested. Record the actual version and resolve the mismatch first. A version print alone proves which executable answered, not that the whole application is compatible.
+   `ls -a` includes names beginning with `.`, such as `.gitignore`. Expect `backend`, `frontend`, `README.md` and `.gitignore`. Write the **absolute path printed by `pwd`** in your evidence; all three terminals must use this same copy.
 
-If `uv` is missing, follow the official [uv installation instructions](https://docs.astral.sh/uv/getting-started/installation/). Do not paste an unreviewed installation script into a privileged shell. If Node is missing or wrong, use the official [Node.js archive](https://nodejs.org/en/download/archive/v24) or the cohort's approved version manager.
+## 2. Verify the tools
 
-## Step 3 — Resolve the API dependencies
+1. In **API**, still at the working-copy root, run:
 
-```bash
-cd backend
-uv python install 3.14.8
-uv python pin 3.14.8
-uv sync
-uv run python --version
-uv run python -c 'import fastapi; print("FastAPI", fastapi.__version__)'
-```
+   ```bash
+   uv --version
+   node --version
+   npm --version
+   curl --version
+   command -v lsof
+   ```
 
-Expected observations:
+   The first four report versions (curl also prints capabilities). `command -v` reports where a tool is found; no path means it is unavailable. Expect uv `0.13.1`, Node `v24.22.0` and npm `11.19.1`. Record the actual versions.
 
-- `uv` finishes without a dependency-resolution error.
-- `uv run python --version` reports Python 3.14.8.
-- FastAPI's printed version is 0.143.2.
-- `uv.lock` is created in `backend/` if it was not already supplied.
+2. STOP on `command not found`, a missing `lsof` path, or a version mismatch. Use the [environment matrix](../../environment-matrix.md) and approved setup support; do not upgrade npm globally or silently substitute versions. Python will be checked inside the managed project in the next step, not inferred from another system Python.
 
-If these observations differ, stop and capture the full error. Do not manually edit package files to suppress a resolution problem; the compatibility matrix and pins must be reviewed.
+3. Check inherited environment settings in **API** now, and repeat this check in **WEB** when you open it in section 6:
 
-**Reproducible rerun rule:** once the maintainer has validated and committed `uv.lock`, a clean clone uses `uv sync --locked`. Do not regenerate a lockfile and call it the same environment without reviewing the diff.
+   ```bash
+   if [ "${VITE_API_BASE_URL+x}" = x ] || [ "${ALLOWED_ORIGINS+x}" = x ]; then
+     echo "STOP: inherited lab settings exist; ask setup support before continuing"
+   else
+     echo "No inherited lab settings"
+   fi
+   ```
 
-## Step 4 — Start the API process
+   `${NAME+x}` checks whether a shell setting exists without printing its value. Continue only with the second message in each terminal. An exported setting can override a file or the application's default even in a fresh source copy. Do not edit startup files or unset unrelated settings to bypass this check.
 
-Still in `backend/`:
+## 3. Install the locked API environment
 
-```bash
-uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
+1. In **API**, enter the backend and verify the path:
 
-Keep this terminal open. Expected startup output indicates Uvicorn is listening on `http://127.0.0.1:8000`. The exact log phrasing may differ by runtime version; use the actual listening address and process status, not a memorized screenshot.
+   ```bash
+   cd backend
+   pwd
+   ```
 
-Open another terminal. Use the absolute path you recorded in Step 1 to navigate to the project root, then verify the location before continuing. For example, replace `/absolute/path/to/groundops-week-01` with the real path printed by `pwd` in the first terminal:
+   The path must end in `groundops-week-01/backend`.
 
-```bash
-cd /absolute/path/to/groundops-week-01
-pwd
-test -d backend && test -d frontend && echo 'project root verified'
-```
+2. Obtain the specified Python using the existing uv tool, then select it for this project:
 
-Do not type the example path literally. If it fails, use the recorded path from your own run. Keep this terminal at the project root for Step 5.
+   ```bash
+   uv python install 3.14.8
+   uv python pin 3.14.8
+   ```
 
-## Step 5 — Verify the API from the shell
+   The first command may download a uv-managed interpreter; the second writes the project's `.python-version`. They do not replace your system Python. If downloading is blocked or the version is unavailable, STOP and save the error. `No download found` can also mean an older uv lacks the required Python download metadata: recheck the installer version from section 2 before diagnosing a missing release. Do not change Python pins to bypass it.
 
-From the project root:
+3. Install the recorded dependencies:
 
-```bash
-curl -i http://127.0.0.1:8000/health
-curl -i http://127.0.0.1:8000/api/status
-```
+   ```bash
+   uv sync --locked
+   ```
 
-Expected `/health` response includes a successful HTTP status and JSON equivalent to:
+   `sync` creates/updates the local `.venv`; `--locked` refuses to change `uv.lock`. Expect completion without errors; repeat runs can report that packages are already installed. A failure may mean a missing/stale lockfile, network problem, or unavailable interpreter/package—read the actual message rather than assuming one cause. Do not regenerate the lockfile.
 
-```json
-{"status":"ok"}
-```
+4. Verify the environment that will actually run the API:
 
-Expected `/api/status` response is JSON equivalent to:
+   ```bash
+   uv run python --version
+   uv run python -c 'import fastapi, uvicorn; print("FastAPI", fastapi.__version__); print("Uvicorn", uvicorn.__version__)'
+   ```
 
-```json
-{
-  "service": "groundops-api",
-  "status": "available",
-  "message": "The browser reached the FastAPI endpoint.",
-  "version": "0.1.0"
-}
-```
+   `uv run` selects the project environment. Python's `-c` executes the quoted short check. Expect:
 
-The JSON whitespace and header order may differ. The relevant evidence is the HTTP status and exact field values. If the command fails, capture the error and API terminal before changing anything.
+   ```text
+   Python 3.14.8
+   FastAPI 0.143.2
+   Uvicorn 0.54.0
+   ```
 
-Now run a request that supplies the expected origin:
+   Save the output. STOP if it differs. Do not move or rename this folder afterward: environments can contain absolute paths. If you already moved it, preserve the evidence and make a fresh copy at its final location rather than continuing with a broken `.venv`.
 
-```bash
-curl -i -H 'Origin: http://127.0.0.1:5173' http://127.0.0.1:8000/api/status
-```
+## 4. Start the API
 
-Expected response headers include `access-control-allow-origin: http://127.0.0.1:5173` (header casing is not significant). This proves the response has the expected CORS header for the supplied origin; `curl` itself does not enforce browser CORS restrictions.
+1. In **API**, at `backend/`, inspect port 8000:
 
-## Step 6 — Resolve frontend dependencies and start Vite
+   ```bash
+   lsof -nP -iTCP:8000 -sTCP:LISTEN
+   ```
 
-Open a third terminal. Use the absolute path you recorded earlier to navigate to the project root, then enter `frontend/`:
+   `lsof` lists open files/network sockets. `-nP` keeps addresses/ports numeric; `-iTCP:8000` selects TCP port 8000; `-sTCP:LISTEN` selects listeners. **No output** usually means no visible listener (exit status 1 is normal for no match). A permission/tool error is not proof the port is free. If a process is listed, STOP: identify it and use its own terminal's `Ctrl+C` only if it is your previous lab server. Never kill an unknown process or change ports to bypass this baseline.
 
-```bash
-cd /absolute/path/to/groundops-week-01
-cd frontend
-pwd
-npm install
-npm ls --depth=0
-npm run dev
-```
+2. Start the server:
 
-Expected direct package versions:
+   ```bash
+   uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
+   ```
 
-- `react@19.3.1`
-- `react-dom@19.3.1`
-- `vite@8.3.4`
-- `@vitejs/plugin-react@6.1.2`
+   `main:app` means the `app` object in `main.py`; `--reload` watches for source changes; `--host 127.0.0.1` listens only locally; `--port 8000` chooses the API port. Expect lines similar to:
 
-Vite should report a local URL. The configuration uses `http://127.0.0.1:5173` and `strictPort: true`, so it should fail rather than silently move to another port. If port 5173 is in use, stop the conflicting process or change the port and update the API's CORS allowlist accordingly. Do not let the app silently run on another origin while believing it is using the baseline.
+   ```text
+   Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+   Application startup complete.
+   ```
 
-Open `http://127.0.0.1:5173` in the browser.
+   Leave this terminal running. An import error means check `pwd` and the dependency step; “address already in use” means return to the port check, not start another copy.
 
-**Build vs development note:** `npm run dev` runs a development server. It is appropriate for this request-tracing lab; it is not a substitute for the production build. A later lab will validate `npm ci` and `npm run build` with a committed lockfile.
+## 5. Ask the API directly
 
-## Step 7 — Trace one request in the browser
+1. Open **CHECKS**. Replace the example path with your recorded working-copy root:
 
-1. Open browser DevTools (usually F12 or right-click → Inspect).
-2. Select **Network**. Enable **Preserve log** if available and clear old entries.
-3. In the page, select **Check API** once.
-4. Find the request to `/api/status`.
-5. Record the full Request URL, method, status, response body and relevant response headers.
-6. Look for the matching request line in the FastAPI terminal.
-7. Confirm the UI shows `groundops-api`, `available` and the message returned by the API.
-8. Inspect the Console for JavaScript or browser-policy errors.
+   ```bash
+   cd "/absolute/path/to/groundops-week-01"
+   pwd
+   test -d backend && test -d frontend && echo "Working-copy root confirmed"
+   ```
 
-Expected baseline outcome:
+   Continue only if that message appears and `pwd` matches your record.
 
-- The network entry targets `http://127.0.0.1:8000/api/status`.
-- The request method is `GET`.
-- The HTTP response is successful and contains the expected JSON fields.
-- The response allows `http://127.0.0.1:5173` as the origin.
-- The UI presents the returned message without an error panel.
+2. Run each request and save its output:
 
-Do not infer that the browser sent the request only because the UI button changed. Use the Network panel and backend observations. Do not infer that the endpoint is secure or production ready: this local lab has no authentication, TLS setup, database or real AI provider.
+   ```bash
+   curl -i --max-time 5 http://127.0.0.1:8000/health
+   curl -i --max-time 5 http://127.0.0.1:8000/api/status
+   ```
 
-## Step 8 — Complete the request-trace record
+   `curl` makes an HTTP request; `-i` includes response headers; `--max-time 5` limits each request to five seconds. Expect `HTTP/1.1 200 OK`, then JSON. `/health` returns `{"status":"ok"}`. `/api/status` returns these values (spacing may differ):
 
-Copy this table into your lab notes and fill it with actual values; don't copy the example as if it were an observation.
+   ```json
+   {"service":"groundops-api","status":"available","message":"The browser reached the FastAPI endpoint.","version":"0.1.0"}
+   ```
 
-| Evidence field | Your observation |
-|---|---|
-| Date/time and machine/OS |  |
-| Python / uv / Node / npm versions |  |
-| Frontend URL and browser origin |  |
-| API target shown in Network |  |
-| HTTP method + path |  |
-| Response status |  |
-| Response body fields |  |
-| CORS response header |  |
-| Matching API process log |  |
-| Console warnings/errors |  |
-| User-visible result |  |
-| What each observation proves |  |
-| What remains unproven |  |
+   If connection is refused, inspect **API** and port 8000. If HTTP 404 appears, compare the path exactly. HTTP 500 is a server error: save the API log and STOP. Curl can exit successfully even for HTTP errors; read the status line.
 
-## Acceptance criteria
+3. Send the browser's expected origin:
 
-The lab passes only when the learner can demonstrate all of the following:
+   ```bash
+   curl -i --max-time 5 -H 'Origin: http://127.0.0.1:5173' http://127.0.0.1:8000/api/status
+   ```
 
-- [ ] The API process and frontend process were started separately and are independently stoppable.
-- [ ] Direct `curl -i` tests show the required response status and JSON values.
-- [ ] The browser Network panel shows the actual frontend-to-API request and response.
-- [ ] The browser response is permitted by the configured CORS origin.
-- [ ] The UI renders the actual API result rather than a hardcoded success message.
-- [ ] The evidence table is completed with observations from the learner's run.
-- [ ] The learner explains at least two claims the successful lab does **not** establish.
-- [ ] Any version mismatch, warning, skipped test or unexpected behavior is recorded rather than concealed.
+   `-H` adds the quoted request header. Expect `access-control-allow-origin: http://127.0.0.1:5173` (header letter case does not matter). Curl shows the permission header but **does not enforce** the browser's CORS policy. This is not yet a browser test.
 
-## Cleanup
+## 6. Install and start the frontend
 
-- Stop Vite with `Ctrl+C` in the frontend terminal.
-- Stop Uvicorn with `Ctrl+C` in the backend terminal.
-- Keep `uv.lock` and `package-lock.json` once created; they are part of the reproducibility evidence, not temporary clutter.
-- No cloud resources were created by this lab.
+1. Open **WEB** and navigate explicitly:
+
+   ```bash
+   cd "/absolute/path/to/groundops-week-01/frontend"
+   pwd
+   ls -a
+   ```
+
+   Replace the example path. Inspect for local `.env` files. For this baseline, no custom `.env`, `.env.local` or mode-specific override should be present. If one exists, STOP and identify it; do not overwrite someone else's configuration.
+
+   Repeat the inherited-settings check from section 2 in this WEB terminal before continuing.
+
+2. Install from the supplied lockfile:
+
+   ```bash
+   npm ci
+   ```
+
+   `ci` installs the lockfile's dependency set; it replaces `node_modules` if present. It fails if package metadata and lockfile disagree. Do not replace this with `npm install`. Save the output; STOP on an actual error.
+
+   npm 11 may warn about optional macOS `fsevents@2.3.3` install scripts not covered by `allowScripts`. Do not run `npm install-scripts approve` merely to silence a warning. Also ignore npm's upgrade notice: the baseline remains npm **11.19.1**.
+
+3. List the direct packages:
+
+   ```bash
+   npm ls --depth=0
+   ```
+
+   `--depth=0` hides nested dependencies. Expect React and React DOM **19.3.1**, Vite **8.3.4**, and `@vitejs/plugin-react` **6.1.2**. STOP on missing/invalid packages.
+
+4. Check port 5173 with the same rules as the API port:
+
+   ```bash
+   lsof -nP -iTCP:5173 -sTCP:LISTEN
+   ```
+
+5. Start Vite:
+
+   ```bash
+   npm run dev
+   ```
+
+   This runs the `dev` script in `package.json`. Expect `Local: http://127.0.0.1:5173/`. Leave **WEB** running. The supplied `strictPort: true` means an occupied port produces an error rather than selecting another port. STOP on that error; do not change the origin.
+
+   This is a development server, not a production build. A later lab builds the bundle; a successful `npm run dev` does not establish that build result.
+
+## 7. Trace one browser action and save evidence
+
+1. In the **browser address bar**, enter `http://127.0.0.1:5173`. Do not use `localhost`; it is a different browser origin. Confirm the page displays that browser origin and API base URL `http://127.0.0.1:8000`.
+2. Open DevTools: right-click a blank page area → **Inspect**. Alternatives: **Ctrl+Shift+I** on Linux/Windows or **Command+Option+I** on macOS. Select **Network** (use the `»` overflow menu if hidden). Keep DevTools open while clicking the page.
+3. Enable **Preserve log**. Clear old requests using the clear icon; enter `api/status` in the filter box. If nothing appears after the next action, remove the filter and make sure Network recording is enabled.
+4. Click **Check API** **once** on the page. Select the resulting `status`/`api/status` row. Under **Headers**, expand **General** and **Response Headers**. Record the full URL, method `GET`, status `200`, and allow-origin header.
+5. Select the request's **Response** tab. Copy the actual JSON into your evidence file. Save a screenshot of Headers as `GRO-LAB01-network.png` and of Response as `GRO-LAB01-response.png` using your OS screenshot tool. Do not include unrelated tabs or personal data.
+6. In **API**, locate the matching line, such as `GET /api/status HTTP/1.1" 200 OK`. Copy that line and its time, if shown, into the notes. A shell curl request also creates a log entry: use the order/time of your single click to correlate it.
+7. Select DevTools **Console**. Save any error text or explicitly record “no errors observed after this click.” A warning is not automatically a failure. Save the rendered **Response received** card as `GRO-LAB01-ui.png`.
+8. If the page renders but the request fails, do not call the whole lab passing. Compare the requested port, direct curl result, API log and allow-origin header. Save the failure before troubleshooting; [LAB02](GRO-LAB02-diagnose-the-broken-request-path.md) explores those boundaries.
+
+## 8. Finish the record, pause or resume
+
+Include actual OS/browser/tool versions, absolute working-copy path, frontend origin, request URL/method/status, response body/header, API log, Console findings, UI result, and what each observation supports. State any skipped check and what remains unproven: this local app has no authentication, TLS, database or real AI provider.
+
+If a terminal closes, do not rerun the copy or installs automatically. Reopen the named terminal and `cd` to the **recorded absolute path** (API adds `/backend`, WEB adds `/frontend`, CHECKS uses the root). Check the appropriate port from CHECKS before restarting its server. If the port is occupied but you cannot identify the owner, STOP instead of launching another copy. No shell variables are needed to resume this lab.
+
+## Acceptance and cleanup
+
+- [ ] Both servers were started separately and the paths/tool versions were recorded.
+- [ ] Direct requests show the expected HTTP status and JSON.
+- [ ] Browser evidence shows the real request, permitted origin, response and rendered result.
+- [ ] The API log is correlated with the browser action.
+- [ ] Unexpected output, warnings, mismatches and skipped checks are retained honestly.
+- [ ] You can explain two things a successful local request does not prove.
+
+Stop **WEB** with `Ctrl+C`, then **API** with `Ctrl+C`. In **CHECKS**, rerun the two `lsof` checks; no listener output is expected for these stopped lab processes. If another process remains, identify it rather than killing it. Keep the working copy and lockfiles for LAB02. No cloud cleanup is needed.
 
 ## Sources
 
-- [FastAPI — First Steps](https://fastapi.tiangolo.com/tutorial/first-steps/)
-- [FastAPI — CORS](https://fastapi.tiangolo.com/tutorial/cors/)
-- [MDN — HTTP overview](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview)
-- [MDN — CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS)
-- [uv — Locking and syncing](https://docs.astral.sh/uv/concepts/projects/sync/)
-- [Vite — Getting started](https://vite.dev/guide/)
+- [FastAPI first steps](https://fastapi.tiangolo.com/tutorial/first-steps/) and [CORS](https://fastapi.tiangolo.com/tutorial/cors/)
+- [MDN HTTP overview](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview) and [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS)
+- [uv locking and syncing](https://docs.astral.sh/uv/concepts/projects/sync/)
+- [Vite getting started](https://vite.dev/guide/)
 
 ## Validation disclosure
 
-**Not yet verified at the exact pinned versions:** frontend dependency installation, Vite build, clean `npm ci` replay, exact Python 3.14.8 + FastAPI 0.143.2 installation, exact `uv sync --locked` replay, and browser execution across the supported OS matrix. Do not mark this lab approved until those checks have evidence in `quality-ledger.md`.
+Prior evidence records a locked install and production build on one macOS machine: Python 3.14.8/FastAPI 0.143.2, and Node 22.22.3 plus the Node 24.22.0/npm 11.19.1 baseline. Direct API checks were also recorded. That does not validate every extracted pack or operating system.
+
+**Bounded author replay, 2026-11-08:** clean native setup on macOS arm64 passed with uv 0.13.1, the listed Python/packages and Node/npm pins. Direct API/CORS checks and an integrated Chromium button request returned the expected response; owned servers were stopped. This is not a novice-observed walkthrough or a Windows/Linux claim. Record your own output rather than treating example text as captured evidence.
+
+**Candidate check, 2026-11-10:** a clean application copy passed the pinned locked install, API tests, frontend tests/build and scripted Chromium request/response/log checks on macOS 27.2 arm64. The browser harness used Uvicorn reload mode, checked actual results and verified listener cleanup. It did not perform a learner's manual DevTools/screenshot routine or establish beginner timing/resume usability. This does not certify a newly distributed archive.

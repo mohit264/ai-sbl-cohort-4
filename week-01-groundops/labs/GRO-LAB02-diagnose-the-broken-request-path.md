@@ -1,251 +1,297 @@
 # GRO-LAB02 — Diagnose the Broken Request Path
 
-**Planned learner time:** 90 minutes, separate from teaching time.  
-**Status:** Draft; fault scenarios reviewed conceptually, not yet executed at pinned versions.  
-**Prerequisite:** Complete GRO-LAB01 and retain its passing evidence record.  
-**Risk:** Local-only; no AWS resources, credentials or destructive operations.
+**Planned learner time:** 90 minutes, separate from teaching time. Allow **15–25 extra minutes** if reopening the tools and practising evidence capture for the first time.
+**Prerequisite:** Complete [GRO-LAB01](GRO-LAB01-run-and-trace-the-request.md) and retain its passing evidence.
+**Risk:** Local-only; no AWS resources, credentials or production changes.
 
-## Objective
+## What you will investigate
 
-Diagnose three faults that can produce a similar user-visible symptom:
+Three controlled changes can all make the page display “Request failed”: a different API target port, a stopped API process, and a mismatched allowed browser origin. For each, capture the symptom, write a hypothesis, run a test that separates possible causes, restore the baseline, and verify again.
 
-1. the frontend targets the wrong API port;
-2. the API process is stopped;
-3. the API is configured to allow the wrong browser origin.
+Read the [lab handbook](../../lab-handbook.md) for shell notation. Keep the same `groundops-week-01` working copy, exact tool/package versions and lockfiles from LAB01. Do not change dependencies, disable browser security, or allow every origin as a workaround.
 
-For each failure, prove which boundary is broken, restore service with the smallest appropriate change, repeat the verification, and identify one prevention control. Do not jump straight to restarting everything.
+## 1. Reopen your workspace and establish a baseline
 
-## Rules of engagement
+1. Open three Bash terminals named **API**, **WEB** and **CHECKS**. In each, replace the example path with the absolute working-copy path saved in LAB01:
 
-- Use the same application and the same browser window from LAB01.
-- For each scenario, navigate explicitly from a new terminal to the working copy's root, `groundops-week-01`. The commands below assume this project root is the current directory unless the step says to change into `frontend/` or `backend/`. Use `pwd` to verify; do not guess from a terminal tab name.
-- Change only the fault specified for a scenario.
-- Capture the baseline and failure evidence before making a correction.
-- Write a hypothesis before running the discriminating test.
-- Record exact commands and actual outputs, including results that contradict your guess.
-- Do not disable browser security. Do not widen CORS to an arbitrary origin as a shortcut.
+   **API**:
 
-## Incident worksheet
+   ```bash
+   cd "/absolute/path/to/groundops-week-01/backend"
+   pwd
+   ```
 
-Complete a new copy for each scenario:
+   **WEB**:
+
+   ```bash
+   cd "/absolute/path/to/groundops-week-01/frontend"
+   pwd
+   ```
+
+   **CHECKS**:
+
+   ```bash
+   cd "/absolute/path/to/groundops-week-01"
+   pwd
+   test -d backend && test -d frontend && echo "Working-copy root confirmed"
+   ls -a frontend
+   ```
+
+   `pwd` prints your current directory. Continue only if each path matches its label and CHECKS prints the confirmation. The frontend should have no custom environment overrides. If an existing `.env.local` is not demonstrably from your own previous attempt, STOP and preserve it.
+
+   In **API** and **WEB**, check inherited environment settings before establishing the baseline:
+
+   ```bash
+   if [ "${VITE_API_BASE_URL+x}" = x ] || [ "${ALLOWED_ORIGINS+x}" = x ]; then
+     echo "STOP: inherited lab settings exist; ask setup support before continuing"
+   else
+     echo "No inherited lab settings"
+   fi
+   ```
+
+   The test checks presence without printing values. Continue only with `No inherited lab settings` in both terminals. Scenario C later uses a command-local prefix, not an exported shell setting. An exported Vite setting would override Scenario A's file and invalidate the experiment.
+
+2. In **CHECKS**, inspect both ports:
+
+   ```bash
+   lsof -nP -iTCP:8000 -sTCP:LISTEN
+   lsof -nP -iTCP:5173 -sTCP:LISTEN
+   ```
+
+   `-nP` keeps addresses and ports numeric; the remaining options select listeners on the named TCP port. No output usually means no visible listener (exit 1 is normal for no match). A permission/tool error is not a free-port result. If a server is already running, use its existing terminal; do not start duplicates. If you cannot identify a listed process as yours, STOP.
+
+3. If not already running, start **API** at `backend/`:
+
+   ```bash
+   uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
+   ```
+
+   `uv run` uses the locked project environment; `main:app` selects the API in `main.py`; `--reload` watches source changes; `--host` and `--port` set the local listener. Expect the listening URL and `Application startup complete`. Leave the terminal occupied.
+
+4. If not already running, start **WEB** at `frontend/`:
+
+   ```bash
+   npm run dev
+   ```
+
+   This starts Vite's development-server script. Expect `http://127.0.0.1:5173/`. If either start fails, STOP and resolve it using LAB01; do not inject a fault into an already failing baseline.
+
+5. In **CHECKS**, confirm the API:
+
+   ```bash
+   curl -i --max-time 5 http://127.0.0.1:8000/health
+   curl -i --max-time 5 -H 'Origin: http://127.0.0.1:5173' http://127.0.0.1:8000/api/status
+   ```
+
+   `-i` shows response headers, `--max-time 5` bounds the wait, and `-H` adds the quoted Origin header. Expect HTTP `200`, health `{"status":"ok"}`, status JSON containing `groundops-api`/`available`, and `access-control-allow-origin: http://127.0.0.1:5173`. Curl does not enforce CORS; the browser check is separate.
+
+6. In the **browser**, visit `http://127.0.0.1:5173` and click **Check API**. Confirm **Response received**, then save baseline evidence using the next section.
+
+### Evidence routine — use it before and after each repair
+
+1. Right-click the page → **Inspect**, or use **Ctrl+Shift+I** (Linux/Windows) / **Command+Option+I** (macOS). Select **Network**; use the `»` menu if hidden.
+2. Turn on **Preserve log**, clear old rows, type `api/status` in the filter box, then click **Check API** once.
+3. Select the new request row. Under **Headers**, record **Request URL**, **Request Method**, any HTTP **Status Code**, request **Origin**, and response **access-control-allow-origin** if present. Record “not shown” rather than inventing a value when a failed request has no headers.
+4. Open the request's **Response** tab. Save the body or record that it is unavailable. Then select DevTools **Console** and copy the error text, or write “no errors observed.”
+5. Copy the matching API log line, if any, from **API**. State when no matching line was observed; absence alone does not prove where a request stopped.
+6. Use your OS screenshot tool to save Headers and the visible page result. Use names such as `A-before-network.png`, `A-after-network.png`, and equivalent names for B/C, in a notes folder **outside the app**. Copy terminal commands/results into `GRO-LAB02-evidence.txt`. Do not capture other browser sessions or unrelated personal data.
+
+Create one worksheet per scenario:
 
 ```text
-Scenario ID:
+Scenario / time:
 Expected behavior:
 Observed symptom:
-Observation 1:
-Observation 2:
-Hypothesis:
-Test and expected discriminating result:
-Actual test result:
-Root cause (bounded to evidence):
-Smallest safe correction:
-Verification after correction:
+Request URL / status / Origin / allow-origin header:
+Direct API test and actual output:
+Matching API log, or no matching line observed:
+Hypothesis BEFORE the discriminating test:
+Predicted result if the hypothesis is correct:
+Actual result (including contradictions):
+Root cause supported by these observations:
+Smallest correction:
+After-repair evidence filenames and results:
 Prevention control:
 Tests not executed / remaining uncertainty:
 ```
 
-## Scenario A — The API target is wrong
+## 2. Scenario A — Change only the frontend API target
 
-### Inject the fault
+### A1. Prepare and inject
 
-1. Confirm the baseline request works.
-2. In a terminal whose current directory is the project root `groundops-week-01`, create a local-only frontend environment file:
+1. In **CHECKS** at the working-copy root, ensure the test port is not already in use:
 
-```bash
-cd frontend
-cat > .env.local <<'EOF'
-VITE_API_BASE_URL=http://127.0.0.1:8001
-EOF
-```
+   ```bash
+   lsof -nP -iTCP:8001 -sTCP:LISTEN
+   ```
 
-3. Restart the Vite development process (`Ctrl+C`, then `npm run dev`). Vite reads env files at startup; a restart makes the changed value effective.
-4. Open the page at `http://127.0.0.1:5173` and select **Check API**.
+   Expect no listener output. If another service is listed, STOP this scenario; do not send requests to or stop an unknown service.
 
-### Observe before fixing
+2. Confirm that you will not overwrite an existing override:
 
-- Inspect the exact Request URL in the browser Network panel.
-- Inspect the Console error.
-- In a separate shell, request the known API route directly:
+   ```bash
+   if [ -e frontend/.env.local ]; then
+     echo "STOP: preserve the existing override before proceeding"
+   else
+     echo "Ready to create this scenario's override"
+   fi
+   ```
 
-```bash
-curl -i http://127.0.0.1:8000/api/status
-curl -i --max-time 3 http://127.0.0.1:8001/api/status
-```
+   Continue only with the Ready message.
 
-Expected observation: port 8000 serves the expected API response. Port 8001 fails to establish the expected API HTTP response unless another service happens to be listening there; if another service does respond, record that unexpected fact and inspect it rather than assuming the test setup.
+3. Write this lab's override from **CHECKS**, still at the root:
 
-Write a hypothesis that names the mismatched port. Do not write “network is broken” as the root cause.
+   ```bash
+   cat > frontend/.env.local <<'EOF'
+   VITE_API_BASE_URL=http://127.0.0.1:8001
+   EOF
+   cat frontend/.env.local
+   ```
 
-### Repair and verify
+   `>` writes/replaces a file; `<<'EOF'` supplies literal lines until the closing `EOF`, which must be alone on its line. File creation is silent; the second command must print the one setting. This endpoint is public configuration, not a secret.
 
-1. Remove the local override:
+4. In **WEB**, press `Ctrl+C`. Wait for the prompt. In **CHECKS**, rerun the port-5173 `lsof` check; expect no listener. Then in **WEB** at `frontend/` run `npm run dev` again. Vite reads environment files at startup, so changing the file without restarting is insufficient.
+5. Reload the browser at `http://127.0.0.1:5173`. Confirm its displayed configured API URL now ends in `8001`. Click **Check API** and save **A-before** evidence.
 
-```bash
-rm .env.local
-```
+### A2. Predict, then discriminate
 
-2. Restart Vite.
-3. Retry once in the browser with the Network panel open.
-4. Verify the request URL, status, response header, body and rendered UI.
-5. Compare with the original baseline evidence.
+1. In your worksheet, write which address you believe is wrong and what a direct request to each port should show.
+2. In **CHECKS**, run these separately:
 
-**Expected root cause for the prescribed setup:** frontend configuration points to port 8001 while the lab API listens on 8000. This conclusion is valid only if your evidence confirms those values.
+   ```bash
+   curl -i --max-time 3 http://127.0.0.1:8000/api/status
+   ```
 
-**Prevention idea:** a browser integration test should assert that the UI invokes the documented API path in the test topology. In later production modules, environment-specific endpoint configuration and deployment verification will be addressed explicitly.
+   ```bash
+   curl -i --max-time 3 http://127.0.0.1:8001/api/status
+   ```
 
-## Scenario B — The API process is stopped
+   The first should return HTTP 200 and status JSON. The second is **intentionally expected to fail**, commonly `curl: (7) Failed to connect ... port 8001`. The prompt returning with a nonzero exit is evidence, not a reason to close the terminal. Continue to recovery; do not chain this command with `&&`.
+3. If 8000 also fails, STOP this scenario and restore its previously working API baseline. If 8001 returns an HTTP response, stop and inspect the unexpected listener; do not label it the intended lab result.
 
-### Inject the fault
+### A3. Restore and verify
 
-1. Remove any `.env.local` file left from Scenario A; if you are in the project root, run `rm -f frontend/.env.local`. Verify the default API URL is visible in the UI.
-2. Stop Uvicorn with `Ctrl+C` in its terminal. Do not stop the frontend.
-3. Select **Check API** in the browser.
+1. In **CHECKS**, confirm the file still contains only the override you just created:
 
-### Observe before restarting
+   ```bash
+   cat frontend/.env.local
+   ```
 
-Run:
+2. Only for that lab-owned file, remove it and check:
 
-```bash
-curl -i --max-time 3 http://127.0.0.1:8000/health
-```
+   ```bash
+   rm frontend/.env.local
+   if [ -e frontend/.env.local ]; then
+     echo "STOP: override still exists"
+   else
+     echo "Override removed"
+   fi
+   ```
 
-Record the actual failure. A stopped listener commonly causes a connection-refused error; the exact wording depends on the operating system and client. A timeout can have a different cause, so record it precisely.
+   `rm` deletes this single file; it normally prints nothing. Do not delete other environment files.
+3. Stop **WEB**, verify port 5173 is no longer listening from **CHECKS**, restart `npm run dev` in **WEB**, then reload the browser.
+4. Repeat the evidence routine as **A-after** and repeat the direct request to port 8000. The browser must now target 8000 and render the response. Explain from your observations why changing the target was sufficient; propose one configuration check that would detect this mismatch.
 
-Compare four observations:
+## 3. Scenario B — Stop only the API
 
-- the frontend still renders;
-- the browser API request fails;
-- the direct health request fails;
-- the API process has stopped.
+### B1. Inject and record
 
-The UI loading is expected because HTML and frontend JavaScript are served independently of the API process. Do not conclude that the application is healthy because the frontend still displays.
+1. Confirm Scenario A is repaired: browser target is port 8000, no `frontend/.env.local` remains, and the browser request succeeds.
+2. In **API**, press `Ctrl+C` and wait for shutdown and the prompt. Do **not** stop WEB.
+3. In **CHECKS**, inspect port 8000 with `lsof -nP -iTCP:8000 -sTCP:LISTEN`. No listener output is expected. A remaining listener means STOP and identify it before continuing.
+4. Click **Check API** and save **B-before** evidence. Write a hypothesis predicting the direct health result.
 
-### Repair and verify
+### B2. Test before restarting
 
-Start the API again from the `backend/` directory. From the project root, first run `cd backend`; then start it:
+1. In **CHECKS**:
 
-```bash
-uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
+   ```bash
+   curl -i --max-time 3 http://127.0.0.1:8000/health
+   ```
 
-Then verify in order:
+   This is another **expected nonzero failure**. Connection refused and timeout are different observations; record the exact one. Do not “repair” the frontend because the API request failed.
+2. Compare the visible page, actual target URL, direct health failure and stopped process. Explain why the page can still be visible. If health returns HTTP 200, investigate another listener instead of claiming the stopped-process experiment worked.
 
-1. `curl -i http://127.0.0.1:8000/health`
-2. `curl -i http://127.0.0.1:8000/api/status`
-3. browser Network panel for `/api/status`
-4. rendered status card
+### B3. Restore and verify
 
-**Root cause scope:** the API listener was unavailable because the process was intentionally stopped. This lab does not simulate or explain why a production process might terminate unexpectedly.
+1. In **API**, whose directory is still `backend/`, run:
 
-**Prevention idea:** the later runtime module will distinguish process supervision, startup/readiness/liveness signals and dependency health. Do not prematurely infer that the right fix in production is simply to start a manual terminal process.
+   ```bash
+   uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
+   ```
 
-## Scenario C — CORS is configured for a different origin
+2. In **CHECKS**, repeat the two baseline curl commands in section 1. Then repeat the browser evidence routine as **B-after**. All must pass before Scenario C.
+3. Record the bounded cause and a prevention idea. This experiment deliberately stops a process; it does not establish why a real production process would crash or whether manual restart is an adequate operational control.
 
-### Inject the fault
+## 4. Scenario C — Allow a different browser origin
 
-1. Ensure the browser's frontend URL is `http://127.0.0.1:5173`.
-2. Stop the API with `Ctrl+C` in the API terminal. That terminal should still have `backend/` as its current directory because Uvicorn was started there in LAB01. If you closed that terminal, open a new one, navigate to the project root `groundops-week-01`, then run `cd backend` once.
-3. In the terminal whose current directory is `backend/`, start the API with an intentionally mismatched origin allowlist:
+### C1. Inject only the origin mismatch
 
-```bash
-ALLOWED_ORIGINS=http://localhost:5173 uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
+1. Confirm the browser address is **`http://127.0.0.1:5173`**, not `localhost`. In **API**, stop Uvicorn with `Ctrl+C`; in **CHECKS**, confirm port 8000 is no longer listening.
+2. In **API** at `backend/`, start:
 
-The browser origin remains `http://127.0.0.1:5173`, but the API is configured to allow `http://localhost:5173`. Those origins are different because the hostname differs.
+   ```bash
+   ALLOWED_ORIGINS=http://localhost:5173 uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
+   ```
 
-### Observe before fixing
+   The `NAME=value command` prefix supplies an environment value to **this command only**. It does not permanently configure your shell. `localhost` and `127.0.0.1` are different origin hostnames even when both reach your machine.
+3. Click **Check API** and save **C-before** evidence. Write a hypothesis predicting whether the server receives the request and which permission header should be present or missing.
 
-1. Select **Check API** in the browser.
-2. Inspect the Network and Console tabs. Capture the origin and the CORS-related response header behavior.
-3. From the shell, run the direct request without an `Origin` header:
+### C2. Compare HTTP success with browser permission
 
-```bash
-curl -i http://127.0.0.1:8000/api/status
-```
+1. In **CHECKS**, request without an Origin header:
 
-4. Then send the browser's origin explicitly:
+   ```bash
+   curl -i --max-time 5 http://127.0.0.1:8000/api/status
+   ```
 
-```bash
-curl -i -H 'Origin: http://127.0.0.1:5173' http://127.0.0.1:8000/api/status
-```
+2. Request with the browser's actual Origin header:
 
-Expected interpretation: the API can still return a successful HTTP response, while the response for the unapproved browser origin does not include the matching `Access-Control-Allow-Origin` value. `curl` reports the HTTP response; it does not enforce the browser's cross-origin read policy. The browser blocks JavaScript from reading the response when the policy check fails.
+   ```bash
+   curl -i --max-time 5 -H 'Origin: http://127.0.0.1:5173' http://127.0.0.1:8000/api/status
+   ```
 
-Do not say “the request never reached the API” unless server-side evidence supports that conclusion. CORS failures can occur after the request reaches the server; some request types also involve a preflight `OPTIONS` request.
+   Both can return HTTP 200 and JSON. Inspect whether the second response allows the **actual** origin. Curl does not enforce the browser's cross-origin read restriction. A browser may show an HTTP response but block JavaScript from reading it.
+3. Compare those headers with Console and API logs. If curl cannot connect at all, you have not isolated an origin-policy fault: STOP and inspect API startup. Do not infer “never reached the API” merely from a CORS message.
 
-### Repair and verify
+### C3. Restore the specific allowed origin
 
-1. Stop Uvicorn with `Ctrl+C`.
-2. Start it with the correct allowlist:
+1. Stop **API**, confirm port 8000 is free from **CHECKS**, then start this in **API** at `backend/`:
 
-```bash
-ALLOWED_ORIGINS=http://127.0.0.1:5173 uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
+   ```bash
+   ALLOWED_ORIGINS=http://127.0.0.1:5173 uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
+   ```
 
-3. Repeat the browser request and the `curl -i` request with the `Origin` header.
-4. Verify that the response includes the correct allow-origin header and the UI renders the JSON payload.
+2. Repeat the curl request with the Origin header and the browser evidence routine as **C-after**. Expect the matching allow-origin header and a readable response rendered by the UI.
+3. Explain what changed and what remained reachable during the incident. CORS is not authentication: do not allow `*`, reflect arbitrary origins, or enable credentials to evade this lab's policy check.
 
-**Root cause for the prescribed setup:** the API's configured browser-origin allowlist does not match the actual frontend origin. Confirm this with observed values before writing it as the cause.
+## 5. Compare, submit, and clean up
 
-**Security rule:** do not respond by allowing every origin by default, reflecting any arbitrary `Origin`, or enabling credentials without an explicit requirement and security review. CORS is not authentication. See [MDN CORS guidance](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS) and the [FastAPI CORS tutorial](https://fastapi.tiangolo.com/tutorial/cors/).
+Submit the three worksheets and before/after evidence. Build your own comparison table with these rows: frontend renders; direct port-8000 request result; actual browser target; HTTP status available; allow-origin header; server log evidence; minimal correction. Use your results, not assumptions based on an error message.
 
-## Compare the three incidents
+Acceptance checks:
 
-| Signal | Wrong API port | API stopped | CORS mismatch |
-|---|---|---|---|
-| Frontend page renders | Yes | Yes | Yes |
-| Expected API direct request to port 8000 | Succeeds | Fails while stopped | Succeeds |
-| Browser request target | Wrong port | Correct port | Correct port |
-| Backend may receive the intended request | Not if it targets another port | No listener to receive it | Yes, often; confirm logs/response |
-| HTTP response available in browser JS | No successful API response from wrong port | No | Response can exist but is blocked from JS by CORS policy |
-| First fix to test | Correct endpoint URL | Start/recover the process and investigate why it stopped in real incidents | Correct the specific allowlist and retest |
+- [ ] A passing baseline was established before each single fault.
+- [ ] Each hypothesis predicted a result before the discriminating test.
+- [ ] Actual failure output was preserved, including intentionally nonzero curl results.
+- [ ] Each correction was followed by direct API **and** browser checks.
+- [ ] You distinguish response reachability, browser read permission and authentication.
+- [ ] Remaining uncertainty is explicit: no proxy, TLS, cluster, authentication or AWS path was tested.
 
-This table describes the intentionally injected lab setups. Real systems may have proxies, service meshes, DNS, TLS, auth middleware, browser extensions and other boundaries; do not mechanically reuse the table without new evidence.
+In **CHECKS**, inspect `frontend/.env.local` only if it still exists; remove it only if it is the single lab-owned Scenario A override. Stop **WEB** and **API** with `Ctrl+C`, and check ports 5173/8000 from CHECKS. Keep lockfiles and evidence. No cloud resources were created.
 
-## Required submission
+### Resuming after a break
 
-Submit one incident worksheet per scenario plus:
-
-- a screenshot or export of browser Network evidence before and after each repair;
-- the direct `curl -i` output for the API status route;
-- one sentence that distinguishes the root cause from the visible symptom;
-- one regression-prevention control per scenario;
-- a short statement of what was not tested (for example, no proxy/cluster path, no authentication, no TLS, no real AWS environment).
-
-## Acceptance criteria
-
-- [ ] All three failure scenarios are injected exactly as instructed or deviations are documented.
-- [ ] The learner records observations before restoring each fault.
-- [ ] Each hypothesis makes a checkable prediction.
-- [ ] The test evidence distinguishes the prescribed fault from at least one competing explanation.
-- [ ] A minimal correction restores the expected request path.
-- [ ] Post-fix verification repeats direct API and browser checks.
-- [ ] CORS is not confused with API authentication or server availability.
-- [ ] Remaining uncertainty and unexecuted tests are recorded honestly.
-- [ ] Local `.env.local` is removed after Scenario A and no secrets are introduced.
-
-## Cleanup
-
-- Stop Vite and Uvicorn with `Ctrl+C`.
-- Remove `frontend/.env.local` if it remains:
-
-```bash
-# Run from the project root, groundops-week-01
-rm -f frontend/.env.local
-```
-
-- Keep the lockfiles once the official course baseline has been validated and committed.
-- No cloud resources were created.
+Use your saved absolute working-copy path to reopen the three directories in section 1. No shell variables need to be reconstructed. Do not recopy or reinstall blindly. Read the latest worksheet: if stopped during a fault, first inspect the override file and running processes. Restore that scenario's baseline, record the interruption, then repeat the scenario from its beginning with new evidence. For Scenario C, restart with the explicit **correct** `ALLOWED_ORIGINS` value; a new terminal does not remember the previous command prefix.
 
 ## Sources
 
-- [MDN — CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS)
-- [MDN — CORS errors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS/Errors)
-- [FastAPI — CORS](https://fastapi.tiangolo.com/tutorial/cors/)
-- [FastAPI — First Steps](https://fastapi.tiangolo.com/tutorial/first-steps/)
-- [Vite — Env Variables and Modes](https://vite.dev/guide/env-and-mode)
+- [MDN CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS) and [CORS errors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS/Errors)
+- [FastAPI CORS](https://fastapi.tiangolo.com/tutorial/cors/) and [first steps](https://fastapi.tiangolo.com/tutorial/first-steps/)
+- [Vite environment variables](https://vite.dev/guide/env-and-mode)
 
 ## Validation disclosure
 
-These fault scenarios have been reviewed for causal consistency, but have **not yet been executed end-to-end** using the exact pinned versions in the environment matrix. The CORS behavior, application start/build, clean-install replay, and browser captures must be executed and recorded before approval.
+**Bounded author replay, 2026-11-08:** the native macOS arm64 baseline used uv 0.13.1 and the pinned Python/Node/package versions. Wrong target port, stopped API and mismatched allowed origin each produced the intended distinct evidence, followed by direct HTTP and integrated Chromium recovery checks. Owned servers were stopped and the lab override removed. A novice-observed walkthrough, Windows/Linux execution and accessibility review remain open; this is not release approval.
+
+**Candidate check, 2026-11-10:** scripted Chromium 158.0.8127.18 on macOS 27.2 arm64 reproduced all three distinct faults and their repairs with the pinned native application. The wrong port left the intended API reachable; stopping the API removed its listener; CORS mismatch retained direct HTTP 200 while browser access failed. The override and owned listeners were removed. Manual evidence collection, learner interruption/resume, timing and other platforms remain pending.
