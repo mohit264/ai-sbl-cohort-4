@@ -1,20 +1,30 @@
 # GRO-L02 — Trace the Full-Stack Request
 
 **Teaching time:** 55 minutes  
-**Status:** Draft; source-checked, not approved.  
 **Central mystery:** The React page renders, but its data card fails. Where did the request stop, and what evidence identifies that boundary?
 
-## Instructor run sheet
+**Prerequisites:** GRO-L01's distinction between a running part and a verified outcome. No programming or terminal experience is assumed.
 
-| Minutes | Activity | Teaching purpose |
-|---:|---|---|
-| 0–5 | Revisit the user symptom | Treat it as an outcome requiring investigation. |
-| 5–15 | Draw the request path from browser to API and back | Separate components and protocols. |
-| 15–25 | Explain URL, host, port, origin, request/response, status and JSON | Give the vocabulary only after the need is visible. |
-| 25–37 | Walk through DevTools Network, Console, `curl` and API logs | Map each tool to what it can prove. |
-| 37–47 | Analyze three failure cases: wrong API URL, server unavailable, CORS mismatch | Distinguish similar symptoms through discriminating observations. |
-| 47–53 | Students annotate a request trace | Demonstrate independent reasoning. |
-| 53–55 | Exit check | State what each layer's success does and does not prove. |
+## Before the explanation: predict
+
+You can see **Check API** on the page. Predict what happens if the API program stops but the program serving page files stays running. Could the button remain visible while its action fails? Give a reason before reading the trace.
+
+The inherited capability is naming an evidence boundary. Now we need to locate it: the browser can obtain page files from one program and request data from another. A visible button does not establish that second exchange; equally, a failed API call does not prove the page-file server failed.
+
+**Reading route:** the 55-minute core is the prediction, six-step request, CORS worked comparison, instruments and transfer. Production-scale notes are extension/reference reading. The allocation remains unvalidated with novices; lab setup and execution have their own timebox.
+
+## Mapped model and its limits
+
+Think of a shop directory and a separate service counter. Seeing the directory does not prove a clerk is present at the counter.
+
+| Familiar entity/action | Technical mapping |
+|---|---|
+| Directory telling you what is available | Vite delivers HTML (page structure), CSS (appearance) and JavaScript (behavior) |
+| Person following the counter address | Browser code starts a separate HTTP request to the API URL |
+| Numbered counter and named task | Port identifies a listening endpoint; method and path identify the requested operation |
+| Clerk's reply and the customer's display | API returns status/headers/body; browser code interprets them and updates React's screen |
+
+**Limit:** a counter number is not permission. CORS has no faithful physical-shop counterpart: it is a browser rule governing whether page code may read a cross-origin response, not whether a customer is authenticated. Return to the actual request headers for that decision.
 
 ## 1. Architecture first: a user-visible action crosses boundaries
 
@@ -64,17 +74,20 @@ Each element is a possible fault boundary. A scheme mismatch can create mixed-co
 
 ### Step 3 — The request reaches the API boundary
 
-The browser sends an HTTP request. FastAPI's ASGI server receives it and routes it to the matching operation if the listener, network path, method and route are configured correctly. For our example, `GET /api/status` returns a small JSON document such as:
+The browser sends an HTTP request. Uvicorn is the program owning the network listener; ASGI is the interface by which it passes requests to FastAPI. FastAPI's middleware handles cross-cutting rules such as CORS, and its router maps a method (`GET`, asking to retrieve) plus path to a Python function. No Python authoring is required here. The function returns JSON: named fields with values that page code can read. The supplied `main.py` returns these exact values:
 
 ```json
 {
   "service": "groundops-api",
   "status": "available",
-  "message": "API request completed"
+  "message": "The browser reached the FastAPI endpoint.",
+  "version": "0.1.0"
 }
 ```
 
 FastAPI's introductory documentation shows how a path operation maps an HTTP method and path to a Python function, and how Python values are returned as JSON; see [FastAPI First Steps](https://fastapi.tiangolo.com/tutorial/first-steps/). We use that behavior here but do not yet make claims about production capacity, authentication or availability guarantees.
+
+`service` names the app, `status` is its declared status text, `message` is display text, and `version` is an application label—not a unique source revision. The fixed message says “browser” even when curl asks for it. It is not proof of the caller's identity or a captured browser execution.
 
 **What a direct API test proves:** if `curl http://127.0.0.1:8000/api/status` returns the expected response, the caller running `curl` reached a server that handled this route at that moment.  
 **What it does not prove:** the browser uses the same target, can reach the same network path, will accept the cross-origin response, or will interpret the response correctly.
@@ -83,7 +96,7 @@ FastAPI's introductory documentation shows how a path operation maps an HTTP met
 
 A response has status, headers and (often) a body. HTTP status communicates the result of the request at the HTTP layer. A `200 OK` is not proof of semantic correctness; a `404` may prove that a reachable server does not have the requested route; a `500` means the server reported an internal failure for that request. Use the actual status and body as evidence rather than assuming all non-success cases are equivalent. See [MDN — HTTP messages](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages).
 
-The JavaScript `fetch()` promise normally **resolves** when an HTTP response arrives even if the response status is `404` or `500`. Application code must check `response.ok` or `response.status`; otherwise, it can try to parse an error response as if it were success. Network-level failures and browser CORS enforcement may instead cause the JavaScript request to reject. This distinction matters when writing reliable UI states.
+The JavaScript `fetch()` promise (a placeholder for an asynchronous result) normally **resolves** when an HTTP response arrives even if the response status is `404` or `500`. Application code must check `response.ok` (true for status 200–299) or `response.status`; otherwise, it can try to parse an error response as if it were success. Network-level failures and browser CORS enforcement may instead cause the JavaScript request to reject. See [MDN Window.fetch](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch). This distinction matters when writing reliable UI states.
 
 ### Step 5 — The browser applies CORS where relevant
 
@@ -105,6 +118,20 @@ React may show the message from the API, render an error state, or remain stuck 
 6. Failure paths display a useful error, not a false success or an infinite spinner.
 
 This end-to-end assertion is stronger than “the frontend started” plus “the backend started.”
+
+### Worked trace — one changed condition
+
+**Illustrative values, not captured execution.** Assume one laptop, Vite at `http://127.0.0.1:5173`, Uvicorn at `http://127.0.0.1:8000`, the supplied route and no proxy, credentials or custom request headers.
+
+1. Load the page; the files arrive from port 5173. Predict whether a plain cross-origin `GET /api/status` needs a preflight before continuing.
+2. Click **Check API**. The browser requests port 8000 with `Origin: http://127.0.0.1:5173`. This simple GET needs no preflight. Adding a non-safelisted header would change that assumption.
+3. The handler returns HTTP 200 and the JSON above. With the matching allowed origin, middleware adds `Access-Control-Allow-Origin: http://127.0.0.1:5173`.
+4. The browser permits page code to read the response. The app checks status, parses JSON and displays **Response received** with the fields. That is the expected local outcome, not proof of production readiness.
+5. Change only the API allowlist to `http://localhost:5173` and restart the API, keeping the browser at `127.0.0.1`. Predict the HTTP result and browser result separately.
+6. The same GET can still reach the handler and return 200. For this disallowed origin, **Access-Control-Allow-Origin is absent**; FastAPI's middleware does not substitute the different allowed origin. Curl can print the body, while the browser withholds it from page code. Console supplies the policy diagnostic; the app gets a generic fetch failure.
+7. Compare the effective allowlist with the actual Origin and response header. Restore the exact intended allowlist, restart the API and repeat both direct and browser checks. Do not change the page hostname as well: that could change name resolution and confound the comparison.
+
+If a matching header appears yet the page still fails, the simple allowlist hypothesis is insufficient. Check the browser's actual response, request mode, cache/proxy differences and page handling. One test surviving contradiction is not proof that no other cause exists.
 
 ## 3. A diagnostic instrument proves only its part of the story
 
@@ -162,17 +189,51 @@ For one click, record:
 | Current hypothesis (not yet root cause) |  |
 | Test that would falsify this hypothesis |  |
 
-Students should not fill “root cause” until they have run a test that distinguishes their best explanation from credible alternatives.
+Do not fill “root cause” until you have tested your explanation against credible alternatives and checked a targeted correction. Filling a worksheet is not verification. Record unknowns rather than guessing values.
 
-## 6. Instructor discussion: why `localhost` is a trap
+## 6. Why `localhost` is context-dependent
 
-Ask a learner to describe `localhost` without using the phrase “the server.” The precise answer is that `localhost` is a host name referring to the loopback interface of the machine/network namespace in which name resolution and the connection occur. What that means to a browser, a container, a remote VM and a Kubernetes Pod depends on where each process runs. We will revisit this as containers and cluster networks are introduced. Do not overstate one universal `localhost` mapping across all environments.
+`localhost` is a host name that refers to the loopback interface of the machine or network namespace where name resolution and the connection occur. The browser, a container, a remote VM and a Kubernetes Pod can have different loopback interfaces. Always identify which process interprets the name and where that process runs; do not assume every use of `localhost` refers to one universal host.
 
 The principle to carry forward is **network names are relative to the caller's execution context**. Verify from the location that actually initiates the connection.
 
+## Production pain pattern
+
+The laptop's direct path removes intermediaries, not the need to identify the caller. In production a DNS service resolves names, an edge/cache may reuse a response, and a load balancer selects an API instance. Any intermediary may answer before the API receives the request.
+
+| Failure mechanism | Discriminating evidence / control | Limit or cost |
+|---|---|---|
+| A cache reuses one origin's permission header for another | Compare actual Origin/response; send `Vary: Origin` when responses vary by origin | Preflight caching is separate; its maximum age trades repeated checks against stale permissions |
+| A failed response hides a completed operation, then a retry duplicates it | Use a server-supported request identifier/deduplication contract for non-idempotent work; bound retries with delay/jitter | Idempotent means repeated intended effect is unchanged, not that unlimited retries are safe or free |
+| An outer timeout expires while a dependency keeps working | Compare deadlines and request-linked logs; bound client waiting and downstream work | Timeout is not proof the server did nothing; cancellation may not undo side effects |
+| One old instance or region fails behind a healthy average | Split results by instance/version/region and identify the layer producing the response | More evidence costs storage; choose labels deliberately rather than putting every user ID in metrics |
+| Logs cannot join the steps of one request | A trace ID joins recorded spans (one operation's timed segments) across services | Missing instrumentation or sampling leaves gaps; an ID does not guarantee a complete causal story |
+
+For an illustrative fan-out of **100 independent calls**, each with a **1%** chance of crossing a chosen slow threshold, the chance of at least one slow call is `1 − 0.99^100 ≈ 63%`. Independence and equal probabilities are assumptions, not measurements. This shows why an acceptable average can hide a slow user action, not what the lab's latency is.
+
+The HTML extension discusses loopback in ordinary isolated container/Pod networking. Those are caller-context examples, not instructions to expose this local server on every interface. Host networking, port forwarding and IPv4/IPv6 resolution can change reachability; do not generalize a container example to every topology.
+
+### Extension details and limits
+
+For HTTP(S) pages, origin is a **parsed, normalized scheme/host/effective-port tuple**, not the whole typed URL. Localhost and 127.0.0.1 are distinct hosts even when they reach the same machine; they need not resolve to the same address family. A proxy, published port or authorized SSH forward can deliberately connect otherwise separate network contexts.
+
+Preflight permission can be cached, so not every non-simple call incurs another OPTIONS round trip. MDN documents browser-specific maximum-age caps, and FastAPI's middleware defaults to 600 seconds. A cached preflight permission does not remove checks on the actual response. Vary: Origin concerns a separate HTTP cache when response headers depend on Origin.
+
+Timeouts bound waiting, not necessarily server effects. `AbortSignal.timeout(5000)` uses 5000 milliseconds of **active** time and can pause while a document is suspended. Idempotency means the intended effect of repetition is unchanged, not that responses must be identical or retries cost nothing. Non-idempotent operations need a deliberate safe-replay contract; bound retries and account for load.
+
+HTTP 502, 503 and 504 have different meanings; none universally means “no healthy backend.” An intermediary's health/fail-open behavior is product-specific: an AWS Application Load Balancer can route to unhealthy targets when all targets fail health checks. Keep representative user-path checks distinct from instance health decisions; a shared dependency failure must not accidentally remove all serving capacity.
+
+W3C traceparent version 00 carries `version-trace-id-parent-id-trace-flags`. The trace ID is 16 bytes; parent-id is an 8-byte ID for the caller's operation. Instrumentation creates spans with their own IDs and parent links; a downstream header identifies its sending operation as parent-id. Retained spans can reveal relationships and durations, but missing spans, clock differences or export loss limit the conclusion. Correlation is not causal proof. These mechanisms explain the extension examples; they are not features exercised by the Week 1 app.
+
 ## Exit check
 
-A learner reports: “`curl` returns HTTP 200, so the frontend is working.” Ask them to repair the statement. Strong answer: “The API route returned HTTP 200 to curl from that command's environment. I still need to verify that the browser is calling the expected URL, the response is allowed by browser policy, React handles its status/body, and the requested UI outcome appears.”
+A teammate reports: “`curl` returns HTTP 200, so the frontend is working.” Repair the statement in your own words. Name the caller curl tested, the claim its status supports, and the browser/user checks still needed.
+
+## Transfer and lab handoff
+
+A teammate runs curl inside a remote machine and gets 200 from `localhost:8000`. Your laptop browser cannot reach the same typed address. Predict what each caller addressed. Which observation would distinguish a wrong destination from a browser policy failure? Do not change firewall rules or allowlists to answer this.
+
+Take the blank trace worksheet into [GRO-LAB01](../labs/GRO-LAB01-run-and-trace-the-request.md). Replace every illustrative value with actual observations. Pass the successful baseline plus one bounded uncertainty to [GRO-LAB02](../labs/GRO-LAB02-diagnose-the-broken-request-path.md); compare one fault at a time. Both direct API and browser outcomes are required after recovery.
 
 ## Sources
 
@@ -182,3 +243,15 @@ A learner reports: “`curl` returns HTTP 200, so the frontend is working.” As
 4. FastAPI, [First Steps](https://fastapi.tiangolo.com/tutorial/first-steps/) — path operation and JSON response behavior.
 5. FastAPI, [CORS](https://fastapi.tiangolo.com/tutorial/cors/) — framework configuration and origin definition.
 6. Google SRE, [Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/) — external and internal signals in layered systems.
+7. MDN, [Window.fetch](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch) — resolved HTTP errors versus rejected requests.
+8. MDN, [Access-Control-Max-Age](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Max-Age) — preflight cache scope and browser limits.
+9. IETF, [RFC 9110 §9.2.2](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2) — idempotency and retry limits.
+10. W3C, [Trace Context](https://www.w3.org/TR/trace-context/) — propagated request identity, not proof of complete instrumentation.
+11. Vite, [Env Variables and Modes](https://vite.dev/guide/env-and-mode) — startup loading and inherited environment precedence over env files.
+12. Uvicorn, [default configuration source](https://raw.githubusercontent.com/Kludex/uvicorn/main/uvicorn/config.py) — official repository evidence for host/port defaults; the lab supplies explicit flags.
+13. Docker, [networking](https://docs.docker.com/engine/network/) and [Desktop host access](https://docs.docker.com/desktop/features/networking/networking-how-tos/); Kubernetes, [Pods](https://kubernetes.io/docs/concepts/workloads/pods/) — scoped network contexts.
+14. OpenSSH, [ssh manual, -L](https://man.openbsd.org/ssh) — forwarded destination connection from the remote side.
+15. MDN, [AbortSignal.timeout](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/timeout_static) and [mixed content](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content) — active-time cancellation and loopback exceptions.
+16. AWS Builders' Library, [Timeouts, retries, and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) — side effects after timeout and bounded retries.
+17. AWS, [Application Load Balancer health checks](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html) — product-specific fail-open behavior.
+18. Prometheus, [Instrumentation](https://prometheus.io/docs/practices/instrumentation/) — labelsets and resource costs.
