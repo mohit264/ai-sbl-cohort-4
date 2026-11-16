@@ -5,7 +5,9 @@
 **Instructor-led teaching allocation:** 150 minutes (2.5 hours), excluding labs.  
 **Separate hands-on lab allocation:** 180 minutes (two 90-minute labs).  
 **Primary workload:** React single-page frontend + Python FastAPI API.  
-**Audience:** Learners comfortable with basic programming and command-line use, but not assumed to have production DevOps experience.
+**Audience:** Learners with basic programming familiarity; no prior Python, React or production DevOps experience is required. LAB01 includes terminal basics and first-time setup guidance.
+
+**First time running a Python/React app?** Begin with [LAB01's beginner setup](labs/GRO-LAB01-run-and-trace-the-request.md#0-first-time-using-python-react-or-a-terminal). Allow the additional setup time stated there. This draft has no lockfiles: the lab explains how `npm i` generates `package-lock.json` and `uv sync` generates `uv.lock` before later locked installs.
 
 ## Why this is the first module
 

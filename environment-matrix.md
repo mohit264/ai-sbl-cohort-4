@@ -38,7 +38,7 @@ The versions below are the source-checked baseline proposed for the first lab. R
 
 1. Exact direct dependency versions belong in `pyproject.toml` and `package.json`.
 2. `uv.lock` and `package-lock.json` must be generated and checked into the course repository by the release maintainer after the chosen baseline is resolved and built successfully.
-3. Learner clean installs use `uv sync --locked` and `npm ci`, not an untracked dependency resolution.
+3. Learner clean installs of an approved locked release use `uv sync --locked` and `npm ci`, not an untracked dependency resolution. For this unlocked draft's first exploratory setup only, run `uv sync` in `backend/` and `npm i` in `frontend/` to generate the respective lockfiles, as explained in [LAB01](week-01-groundops/labs/GRO-LAB01-run-and-trace-the-request.md). Keep those files for subsequent installs; generation alone is not release validation.
 4. The generated draft does **not** include verified lockfiles because the target package set could not be installed and built during this generation. That is an explicit release blocker, not an implied success.
 5. A dependency update requires the lockfiles, test evidence, and this matrix to be updated together.
 

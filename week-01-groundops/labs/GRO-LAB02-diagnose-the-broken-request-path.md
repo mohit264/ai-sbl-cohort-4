@@ -8,7 +8,7 @@
 
 Three controlled changes can all make the page display “Request failed”: a different API target port, a stopped API process, and a mismatched allowed browser origin. For each, capture the symptom, write a hypothesis, run a test that separates possible causes, restore the baseline, and verify again.
 
-Read the [lab handbook](../../lab-handbook.md) for shell notation. Keep the same `groundops-week-01` working copy, exact tool/package versions and lockfiles from LAB01. Do not change dependencies, disable browser security, or allow every origin as a workaround.
+Review [LAB01's terminal basics](GRO-LAB01-run-and-trace-the-request.md#read-and-run-commands) if needed. Keep the same `groundops-week-01` working copy, exact tool/package versions and lockfiles from LAB01, including those generated during first-time draft setup. There is no need to run `npm i` or regenerate `uv.lock` for this lab. Do not change dependencies, disable browser security, or allow every origin as a workaround.
 
 ## 1. Reopen your workspace and establish a baseline
 

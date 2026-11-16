@@ -6,6 +6,8 @@ This bundle contains the initial environment matrix and course map, Week 1 Groun
 
 ## Start here
 
+**New to Python or React?** Start with [LAB01's beginner setup](week-01-groundops/labs/GRO-LAB01-run-and-trace-the-request.md#0-first-time-using-python-react-or-a-terminal) for tool installation, terminal basics, first-run `npm i` / `uv sync`, and instructions to run and check both servers.
+
 1. `Track_II_Content_Engineering_Specification.md` — governing instructions and quality contract.
 2. `Track_II_Course_State.md` — current coverage, execution evidence, blockers and exact next action.
 3. `quality-ledger.md` — file-level status, real checks completed and validation still required.

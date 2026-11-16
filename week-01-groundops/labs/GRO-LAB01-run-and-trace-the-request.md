@@ -8,14 +8,56 @@
 
 Start two separate programs: Vite serves the React page; Uvicorn runs the FastAPI API. Then follow one button click from the browser to the API and back. A page appearing is not enough: collect the request address, HTTP status, response body, browser permission header and matching server log.
 
-Read the [lab handbook](../../lab-handbook.md) for terminal basics and the [request-path lesson](../lessons/GRO-L02-trace-the-full-stack-request.md) for the diagram. Use [evidence-first operations](../lessons/GRO-L03-evidence-first-operations.md) when a result differs.
+Start with the beginner setup below, then read the [request-path lesson](../lessons/GRO-L02-trace-the-full-stack-request.md) for the diagram. Use [evidence-first operations](../lessons/GRO-L03-evidence-first-operations.md) when a result differs.
+
+## 0. First time using Python, React or a terminal?
+
+You do not need to write Python or React code for this lab. The application is already supplied; your job is to install its dependencies, start it and observe a request.
+
+### Understand the pieces
+
+| Term | Meaning in this lab |
+|---|---|
+| Python | The language/runtime used by the backend. |
+| FastAPI | The Python framework defining URLs such as `/api/status`; it returns data as JSON (named values in a text format). |
+| Uvicorn | The server process that listens for HTTP requests and runs the FastAPI app. |
+| uv | The tool that installs Python and the backend's Python packages in a project-local environment. |
+| `.venv` | An isolated Python environment inside `backend/`. `uv run` uses it; manual activation and global `pip install` are not needed here. |
+| React | The JavaScript library that renders the page and updates it after a button click. |
+| Node.js / npm | Node runs frontend tooling on your machine. npm installs its packages and runs scripts; React's UI code runs in the browser. |
+| Vite | The local development server that serves the frontend to your browser. |
+| Manifest / lockfile | `package.json` and `pyproject.toml` declare dependencies. `package-lock.json` and `uv.lock` record resolved versions, including dependencies of dependencies. Do not hand-write lockfiles. |
+
+The request path is: **browser button -> FastAPI URL -> JSON response -> React page update**. Vite and Uvicorn are separate programs, so both must stay running. There is no database, Docker setup or React project-generation step in this lab.
+
+### Prepare your tools before starting the timed lab
+
+1. Choose one environment:
+   - **Windows:** follow Microsoft's [WSL installation guide](https://learn.microsoft.com/en-us/windows/wsl/install), open **Ubuntu**, and perform all remaining setup there. Do not install Node in Windows and then try to use it from Ubuntu.
+   - **macOS:** open **Terminal** from Applications > Utilities.
+   - **Linux:** open your terminal application. The proposed Linux baseline is Ubuntu 24.04.
+2. Install **Node.js 24.22.0**, which supplies **npm 11.19.1**, using the [official Node downloads](https://nodejs.org/en/download) for your chosen environment. Select the course version, not an unrelated "latest" release. Follow the installer instructions and reopen the terminal afterward.
+3. Install **uv 0.13.1** using the [official uv installation instructions](https://docs.astral.sh/uv/getting-started/installation/), including their specific-version instructions. Reopen your terminal so the new command can be found. Section 3 uses uv to install Python **3.14.8**; you do not need to install a separate system Python first.
+4. Have a Chromium-based browser and a text editor available (for example, Chrome and VS Code). Check `curl` and `lsof` in section 2. If either is missing, use your OS's approved installation process or ask the instructor; do not paste commands intended for a different OS.
+5. Obtain the course files: download and extract the repository ZIP, or use the instructor's supplied folder. Open that folder in your editor. Find the folder containing `starter-app/`, `week-01-groundops/` and `environment-matrix.md`; that is the repository root used below.
+
+Tool installation may require administrator approval or network access. On a managed computer, use your approved software channel. If the pinned version is unavailable, retain the error and ask the instructor rather than substituting a different version. These are setup directions, not a claim that every OS has been tested.
+
+### Read and run commands
+
+- A terminal accepts commands; an editor changes files; a browser opens URLs. Paste each block labelled `bash` into the terminal named by that step, not into a Python prompt, browser or source file.
+- Start Bash by typing `bash` and pressing Enter. Do not copy the Markdown backticks or a prompt symbol such as `$`. Run one command at a time and wait for its result.
+- `cd "path"` changes the current folder; quote paths containing spaces. `pwd` shows the current folder, `ls` lists files, and `cd ..` moves up one level. Each terminal has its own current folder.
+- Replace `/absolute/path/to/...` examples with your actual folder path; they are not literal paths to paste unchanged.
+- A successful command may print nothing. An error is not a completed setup step: keep the full error and the output of `pwd` for troubleshooting.
+- Once a server is running, leave that terminal open. Open another tab/window for the next terminal; stop a server with `Ctrl+C` in its own terminal.
 
 ## Before starting
 
 - Use Bash. On Windows use Ubuntu in WSL2, not PowerShell. In macOS Terminal, type `bash` if your current shell is zsh. Open all lab terminals in the same operating environment.
 - Required tools: `uv` **0.13.1**, Node.js **24.22.0**, npm **11.19.1**, `curl`, `lsof`, and a Chromium-based browser. The API baseline is CPython **3.14.8**, FastAPI **0.143.2**, Uvicorn **0.54.0**. See the [environment matrix](../../environment-matrix.md).
-- The supplied `starter-app/` must contain `backend/uv.lock` and `frontend/package-lock.json`. A missing lockfile is a **STOP**, not permission to generate a replacement.
-- Do not run system-wide installs or change package versions to get past an error. Missing tools require the approved setup process before this lab.
+- This repository's **draft starter has no lockfiles**. For its first exploratory run, section 3 uses `uv sync` to create `backend/uv.lock` and section 6 uses `npm i` to create `frontend/package-lock.json`. An approved cohort pack must already include both: if either is missing from a pack advertised as locked, STOP and request the complete pack.
+- Do not change package versions to get past an error. Missing tools require the setup process above before this lab; do not run system-wide package installs while troubleshooting the application.
 - These instructions are interactive: run one numbered action, read its result, then continue. Do not paste the whole page as a script. A **STOP** means do not run later actions until the discrepancy is resolved.
 
 ## Your workspace and evidence
@@ -43,10 +85,10 @@ Create a text document **outside the application folder**, for example `GRO-LAB0
 
 ## 1. Find the supplied files and make a working copy
 
-1. In **API**, navigate to the folder that directly contains `starter-app/`: open `students/` under the course root (the outer repository or extracted student-pack folder). You need neither `instructors/` nor course Git metadata. Type `cd ` (with a trailing space), then a quoted absolute folder path from your file manager, and press Enter. For example, replace the example path before running:
+1. In **API**, navigate to the repository root or extracted course folder that directly contains `starter-app/`. This repository does not require a `students/` subfolder. Type `cd ` (with a trailing space), then a quoted absolute folder path from your file manager, and press Enter. For example, replace the example path before running:
 
    ```bash
-   cd "/absolute/path/to/course-root/students"
+   cd "/absolute/path/to/ai-sbl-cohort-4"
    pwd
    ls
    ```
@@ -56,7 +98,7 @@ Create a text document **outside the application folder**, for example `GRO-LAB0
 2. Check the source and destination **before copying**:
 
    ```bash
-   test -f starter-app/backend/uv.lock && test -f starter-app/frontend/package-lock.json && echo "Source lockfiles found"
+   test -f starter-app/backend/pyproject.toml && test -f starter-app/backend/main.py && test -f starter-app/frontend/package.json && echo "Starter source found"
    if [ -e groundops-week-01 ]; then
      echo "STOP: groundops-week-01 already exists; preserve it"
    else
@@ -64,7 +106,15 @@ Create a text document **outside the application folder**, for example `GRO-LAB0
    fi
    ```
 
-   `test -f` checks for a file; `&&` runs the next check only after success. `[ -e ... ]` checks whether a path already exists. Continue only with **both** `Source lockfiles found` and `Destination is available`. No lockfile message means STOP. Do not copy over an existing attempt or nest a new copy inside it.
+   `test -f` checks for a file; `&&` runs the next check only after success. `[ -e ... ]` checks whether a path already exists. Continue only with **both** `Starter source found` and `Destination is available`. No source message means STOP. Do not copy over an existing attempt or nest a new copy inside it.
+
+   Check the lockfiles separately:
+
+   ```bash
+   ls starter-app/backend/uv.lock starter-app/frontend/package-lock.json
+   ```
+
+   For this draft, `No such file or directory` is expected for the absent lockfiles: use the first-time setup branches below. For an approved locked pack, both paths must be listed; missing files mean STOP. Preserve any supplied lockfile rather than deleting it to force a fresh install.
 
 3. Copy and enter the new folder:
 
@@ -110,7 +160,7 @@ Create a text document **outside the application folder**, for example `GRO-LAB0
 
    `${NAME+x}` checks whether a shell setting exists without printing its value. Continue only with the second message in each terminal. An exported setting can override a file or the application's default even in a fresh source copy. Do not edit startup files or unset unrelated settings to bypass this check.
 
-## 3. Install the locked API environment
+## 3. Install the Python API environment
 
 1. In **API**, enter the backend and verify the path:
 
@@ -130,13 +180,23 @@ Create a text document **outside the application folder**, for example `GRO-LAB0
 
    The first command may download a uv-managed interpreter; the second writes the project's `.python-version`. They do not replace your system Python. If downloading is blocked or the version is unavailable, STOP and save the error. `No download found` can also mean an older uv lacks the required Python download metadata: recheck the installer version from section 2 before diagnosing a missing release. Do not change Python pins to bypass it.
 
-3. Install the recorded dependencies:
+3. Install dependencies. Choose **one** command based on whether `uv.lock` exists in this backend folder (use `ls` to inspect it).
+
+   **First-time draft setup, without `uv.lock`:**
+
+   ```bash
+   uv sync
+   ```
+
+   This reads `pyproject.toml`, resolves Python packages, writes `uv.lock` and creates the local `.venv` directory. Wait for successful completion. Then run `ls uv.lock` to confirm the file was created. Keep it for later installs and LAB02; generating it does not make this draft an approved release.
+
+   **Supplied lockfile or subsequent clean setup:**
 
    ```bash
    uv sync --locked
    ```
 
-   `sync` creates/updates the local `.venv`; `--locked` refuses to change `uv.lock`. Expect completion without errors; repeat runs can report that packages are already installed. A failure may mean a missing/stale lockfile, network problem, or unavailable interpreter/package—read the actual message rather than assuming one cause. Do not regenerate the lockfile.
+   `sync` creates/updates the local `.venv`; `--locked` refuses to change `uv.lock`. Expect completion without errors; repeat runs can report that packages are already installed. A failure may mean a missing/stale lockfile, network problem, or unavailable interpreter/package—read the actual message rather than assuming one cause. Do not fall back to unlocked `uv sync` to bypass a stale or incompatible supplied lockfile.
 
 4. Verify the environment that will actually run the API:
 
@@ -229,13 +289,29 @@ Create a text document **outside the application folder**, for example `GRO-LAB0
 
    Repeat the inherited-settings check from section 2 in this WEB terminal before continuing.
 
-2. Install from the supplied lockfile:
+2. Install the React/Vite dependencies. First confirm that `ls` lists `package.json` in this **frontend** folder. Choose **one** command:
+
+   **First-time draft setup, without `package-lock.json`:**
+
+   ```bash
+   npm i
+   ```
+
+   `npm i` is short for `npm install`. It reads `package.json`, downloads packages into `node_modules/` and generates **`package-lock.json` in this same folder**. Wait for the command to finish successfully, then confirm the file exists:
+
+   ```bash
+   ls package-lock.json
+   ```
+
+   Keep this generated lockfile. Do not create it by hand or run `npm ci` first: `npm ci` requires an existing lockfile. You do not need to run `npm ci` immediately after a successful `npm i`; continue to step 3.
+
+   **Supplied lockfile or subsequent clean setup:**
 
    ```bash
    npm ci
    ```
 
-   `ci` installs the lockfile's dependency set; it replaces `node_modules` if present. It fails if package metadata and lockfile disagree. Do not replace this with `npm install`. Save the output; STOP on an actual error.
+   `ci` installs the lockfile's dependency set; it replaces `node_modules` if present. It fails if package metadata and lockfile disagree. Do not replace a failing locked install with `npm i` or delete a supplied lockfile to bypass the failure. Save the output; STOP on an actual error.
 
    npm 11 may warn about optional macOS `fsevents@2.3.3` install scripts not covered by `allowScripts`. Do not run `npm install-scripts approve` merely to silence a warning. Also ignore npm's upgrade notice: the baseline remains npm **11.19.1**.
 
@@ -262,6 +338,19 @@ Create a text document **outside the application folder**, for example `GRO-LAB0
    This runs the `dev` script in `package.json`. Expect `Local: http://127.0.0.1:5173/`. Leave **WEB** running. The supplied `strictPort: true` means an occupied port produces an error rather than selecting another port. STOP on that error; do not change the origin.
 
    This is a development server, not a production build. A later lab builds the bundle; a successful `npm run dev` does not establish that build result.
+
+### Common first-run setup errors
+
+| Symptom | Next check/action |
+|---|---|
+| `npm: command not found` or `uv: command not found` | Return to section 0, finish the relevant tool installation in this OS environment, reopen the terminal, and repeat version checks. |
+| npm reports `ENOENT` / cannot find `package.json` | Run `pwd` and `ls`; navigate to the working copy's `frontend/`, not the repository root or `backend/`. |
+| `npm ci` says a lockfile is required | For this unlocked draft only, run `npm i` in `frontend/` first. For a locked pack, request the missing file. |
+| uv cannot find `pyproject.toml` | Navigate to the working copy's `backend/` before running uv project commands. |
+| An install reports an unavailable version, certificate error or network failure | Save the exact error and tool versions; resolve it with setup support. Do not change package pins or disable certificate verification. |
+| `No module named fastapi` | Use `uv run` from `backend/` after successful synchronization, not an unrelated system Python. |
+| Browser cannot open the page | Check that WEB is still running and open its exact `http://127.0.0.1:5173` URL in the browser. |
+| Page loads but **Check API** fails | Check API is still running, then repeat section 5. A working React page alone does not prove the Python server is reachable. |
 
 ## 7. Trace one browser action and save evidence
 
